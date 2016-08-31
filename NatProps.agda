@@ -20,10 +20,16 @@ m+0≡m : ∀ {m} -> m + 0 ≡ m
 m+0≡m {0} = refl
 m+0≡m {suc m} = cong suc (m+0≡m {m})
 
+m+n≡m'+n' : ∀ {m m' n n'} -> m ≡ m' -> n ≡ n' -> m + n ≡ m' + n'
+m+n≡m'+n' refl refl = refl
 
 1*m≡m : ∀ {m} -> 1 * m ≡ m
 1*m≡m {0} = refl
 1*m≡m {suc m} = cong suc (1*m≡m {m})
+
+2^k+2^k≡2^sk : ∀ {k} -> (2 ^ k) + (2 ^ k) ≡ 2 ^ (suc k)
+2^k+2^k≡2^sk {0} = refl
+2^k+2^k≡2^sk {suc k} rewrite m+0≡m {2 ^ k} | m+0≡m {(2 ^ k) + (2 ^ k)} = refl
 
 
 ≤-steps2 : ∀ {m n} k → m ≤ n → k + m ≤ k + n

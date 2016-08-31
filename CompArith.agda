@@ -21,18 +21,16 @@ open PropEq.≡-Reasoning
 open import Algebra
 import Data.Integer.Properties as IntegerProp
 private
-  module CRℤ = CommutativeRing IntegerProp.commutativeRing
+  module CR = CommutativeRing IntegerProp.commutativeRing
+
+private
+  module CS = CommutativeSemiring Data.Nat.Properties.commutativeSemiring
+
 
 open import NatProps
 open import IntProps
 
 𝔹 = Fin 2
-
--- ∥_∥ : 𝔹 -> ℕ
--- ∥ zero ∥ = 0
--- ∥ suc zero ∥ = 1
--- ∥ suc (suc ()) ∥
--- ∥ 1 ∥ = 1
 
 -- compl : ∀ {k} -> Vec 𝔹 (ℕ.suc k) -> Vec 𝔹 (ℕ.suc k)
 -- compl {zero} (x ∷ []) = not x ∷ []
@@ -47,19 +45,30 @@ open import IntProps
 
 Σspec : ∀ {k} -> Vec 𝔹 k -> ℕ
 Σspec {0} [] = 0
-Σspec {suc i} (x ∷ xs) = toℕ x * 2 ^ i + Σ xs
+Σspec {suc i} (x ∷ xs) = toℕ x * 2 ^ i + Σspec xs
+
+Σspec-step : ∀ {k} -> Vec 𝔹 k -> ℕ
+Σspec-step  {0} [] = 0
+Σspec-step {suc i} (x ∷ xs) = toℕ x * 2 ^ i + Σ xs
 
 
 -- Σ is a better def. to work with ... similar to the def. of ⟪_⟫
 Σspec≡Σ : ∀ {k} (x : Vec 𝔹 k) -> Σspec x ≡ Σ x
 Σspec≡Σ [] = refl
-Σspec≡Σ (zero ∷ xs) = refl
-Σspec≡Σ {suc i} (suc zero ∷ xs) rewrite 1*m≡m {2 ^ i} = refl
+Σspec≡Σ (zero ∷ xs) = Σspec≡Σ xs
+Σspec≡Σ {suc i} (suc zero ∷ xs) rewrite 1*m≡m {2 ^ i} = cong (_+_ (2 ^ i)) (Σspec≡Σ xs)
 Σspec≡Σ {suc i} (suc (suc ()) ∷ xs)
 
 
-⟦_⟧ : ∀ {k} -> Vec 𝔹 (ℕ.suc k) -> ℤ
-⟦ xs ⟧ = + Σ xs
+Σspec-step≡Σ : ∀ {k} (x : Vec 𝔹 k) -> Σspec-step x ≡ Σ x
+Σspec-step≡Σ [] = refl
+Σspec-step≡Σ (zero ∷ xs) = refl
+Σspec-step≡Σ {suc i} (suc zero ∷ xs) rewrite 1*m≡m {2 ^ i} = refl
+Σspec-step≡Σ {suc i} (suc (suc ()) ∷ xs)
+
+
+⟦_⟧ : ∀ {k} -> Vec 𝔹 (ℕ.suc k) -> ℕ
+⟦ xs ⟧ = Σ xs
 
 
 ⟪_⟫ : ∀ {k} -> Vec 𝔹 (ℕ.suc k) -> ℤ
@@ -100,9 +109,9 @@ lem1-1 {k} {suc zero ∷ xs} = aux₂ (- (2 ^ k) ℤ+ + Σ xs) aux
   aux₁ = begin
     - (2 ^ k) ℤ+ + ((2 ^ k) ∸ 1) ≡⟨ cong (_ℤ+_ (- (2 ^ k))) (sym (⊖-≥ (1≤2^k {k}))) ⟩
     - (2 ^ k) ℤ+ ((2 ^ k) ⊖ 1) ≡⟨ cong (_ℤ+_ (- (2 ^ k))) (⊖-ℤ- (2 ^ k) 1) ⟩
-    - (2 ^ k) ℤ+ (+ (2 ^ k) ℤ+ - 1) ≡⟨ sym (CRℤ.+-assoc (- (2 ^ k)) (+ (2 ^ k)) (- 1)) ⟩
-    (- (2 ^ k) ℤ+ + (2 ^ k)) ℤ+ - 1 ≡⟨ CRℤ.+-comm (- (2 ^ k) ℤ+ + (2 ^ k)) (- 1) ⟩
-    - 1 ℤ+ (- (2 ^ k) ℤ+ + (2 ^ k)) ≡⟨ cong (_ℤ+_ (- 1)) (CRℤ.+-comm (- (2 ^ k)) (+ (2 ^ k))) ⟩
+    - (2 ^ k) ℤ+ (+ (2 ^ k) ℤ+ - 1) ≡⟨ sym (CR.+-assoc (- (2 ^ k)) (+ (2 ^ k)) (- 1)) ⟩
+    (- (2 ^ k) ℤ+ + (2 ^ k)) ℤ+ - 1 ≡⟨ CR.+-comm (- (2 ^ k) ℤ+ + (2 ^ k)) (- 1) ⟩
+    - 1 ℤ+ (- (2 ^ k) ℤ+ + (2 ^ k)) ≡⟨ cong (_ℤ+_ (- 1)) (CR.+-comm (- (2 ^ k)) (+ (2 ^ k))) ⟩
     - 1 ℤ+ (+ (2 ^ k) ℤ- + (2 ^ k)) ≡⟨ cong (_ℤ+_ (- 1)) (sym (⊖-ℤ- (2 ^ k) (2 ^ k))) ⟩
     - 1 ℤ+ ((2 ^ k) ⊖ (2 ^ k)) ≡⟨ cong (_ℤ+_ (- 1)) (IntegerProp.n⊖n≡0 (2 ^ k)) ⟩
     - 1 ∎
@@ -158,51 +167,88 @@ _⊕_ : ∀ {k : ℕ} -> Vec 𝔹 k -> Vec 𝔹 k -> (Vec 𝔹 k × 𝔹)
   c = proj₂ (xa ⊕ xb)
 
 
-_←!_ : ∀ {a} {A : Set a} m {n} -> Vec A (m + suc n) -> A
-0 ←! (x ∷ _) = x
-(suc m) ←! (_ ∷ xs) = m ←! xs
-
-si+k≡i+sk : ∀ {i k} -> suc i + k ≡ i + suc k
-si+k≡i+sk {zero} {k} = refl
-si+k≡i+sk {suc i} = cong suc (si+k≡i+sk {i})
-
-∁ : ∀ {k : ℕ} (i : ℕ) -> Vec 𝔹 (i + suc k) -> Vec 𝔹 (i + suc k) -> 𝔹
-∁ 0 a b = zero
-∁ {k} (suc i) a b rewrite si+k≡i+sk {i} {suc k} = ( (toℕ (i ←! a) ) + (toℕ (i ←! b) ) + (toℕ (∁ i a b) ) ) div𝔹
+-- _←!_ : ∀ {a} {A : Set a} m {n} -> Vec A (m + suc n) -> A
+-- 0 ←! (x ∷ _) = x
+-- (suc m) ←! (_ ∷ xs) = m ←! xs
 
 
-r : ∀ {k : ℕ} (i : ℕ) -> Vec 𝔹 (i + suc k) -> Vec 𝔹 (i + suc k) -> 𝔹
-r i a b = ( (toℕ (i ←! a) ) + (toℕ (i ←! b) ) + (toℕ (∁ i a b) ) ) mod𝔹
+-- si+k≡i+sk : ∀ {i k} -> suc i + k ≡ i + suc k
+-- si+k≡i+sk {zero} {k} = refl
+-- si+k≡i+sk {suc i} = cong suc (si+k≡i+sk {i})
 
 
+-- ∁ : ∀ {k : ℕ} (i : ℕ) -> Vec 𝔹 (i + suc k) -> Vec 𝔹 (i + suc k) -> 𝔹
+-- ∁ 0 a b = zero
+-- ∁ {k} (suc i) a b rewrite si+k≡i+sk {i} {suc k} = ( (toℕ (i ←! a) ) + (toℕ (i ←! b) ) + (toℕ (∁ i a b) ) ) div𝔹
 
---
--- -- keep : ∀ {a} {A : Set a} {m} n → Vec A (m + n) → Vec A n
--- -- keep {m = m} n = drop m {n = n}
--- --
--- drop-0 : ∀ {a} {A : Set a} {k : ℕ} {v : Vec A (k + 0)} -> drop k v ≡ []
--- drop-0 {k = k} {v} with splitAt k v
--- drop-0 {v = .(ys ++ [])} | ys , [] , refl = refl
---
--- lem2-1-1 : ∀ {k : ℕ} (i : ℕ) (a b : Vec 𝔹 (suc k + i)) ->
---   drop (suc k) (proj₁ (a ⊕ b)) ≡ proj₁ ((drop (suc k) a) ⊕ (drop (suc k) b))
--- lem2-1-1 {k} 0 a b rewrite
---   drop-0 {k = suc k} {proj₁ (a ⊕ b)} |
---   drop-0 {k = suc k} {a} |
---   drop-0 {k = suc k} {b} = refl
--- lem2-1-1 {k} (suc i) a b = {!   !}
 
--- lem2-1-1 : ∀ {k : ℕ} (i : ℕ) (a b : Vec 𝔹 (suc k + i)) ->
---   keep {m = suc k} i (proj₁ (a ⊕ b)) ≡ proj₁ ((keep {m = suc k} i a) ⊕ (keep {m = suc k} i b))
--- lem2-1-1 {k} 0 a b rewrite
---   keep-0 {k = suc k} {proj₁ (a ⊕ b)} |
---   keep-0 {k = suc k} {a} |
---   keep-0 {k = suc k} {b} = refl
--- lem2-1-1 {k} (suc i) a b = {! a  !}
-  -- where
-  -- ih : keep {m = suc (suc )} i (proj₁ (a ⊕ b)) ≡ proj₁ (keep {m = suc (suc k)} i a ⊕ keep  {m = suc (suc k)} i b)
-  -- ih = lem2-1-1 i ? ?
+-- r : ∀ {k : ℕ} (i : ℕ) -> Vec 𝔹 (i + suc k) -> Vec 𝔹 (i + suc k) -> 𝔹
+-- r i a b = ( (toℕ (i ←! a) ) + (toℕ (i ←! b) ) + (toℕ (∁ i a b) ) ) mod𝔹
 
---
--- lem2-1 : ∀ {k i : ℕ} (a b : Vec 𝔹 (i + suc k)) -> proj₁ ((false ∷ (drop i a)) ⊕ (false ∷ (drop i a))) ≡ false ∷ drop i (proj₁ (a ⊕ b)) -- (proj₂ (a ⊕ a)) ∷ (proj₁ (a ⊕ a))
--- lem2-1 = {!   !}
+-- lem-2-2-1 : ∀ {k : ℕ} {a b : 𝔹} {xa xb : Vec 𝔹 k} -> ⟦ a ∷ xa ⟧ + ⟦ b ∷ xb ⟧ ≡ ⟦ xa ⟧ + ⟦ xb ⟧ + toℕ a * (2 ^ k) + toℕ b * (2 ^ k)
+-- lem-2-2-1 = ?
+
+
+lem-2-2-1 : ∀ {a b c : 𝔹} -> toℕ a + toℕ b + toℕ c ≡ toℕ ((toℕ a + toℕ b + toℕ c) div𝔹) * 2 + toℕ ((toℕ a + toℕ b + toℕ c) mod𝔹)
+lem-2-2-1 {zero} {zero} {zero} = refl
+lem-2-2-1 {zero} {zero} {suc zero} = refl
+lem-2-2-1 {zero} {zero} {suc (suc ())}
+lem-2-2-1 {zero} {suc zero} {zero} = refl
+lem-2-2-1 {zero} {suc zero} {suc zero} = refl
+lem-2-2-1 {zero} {suc zero} {suc (suc ())}
+lem-2-2-1 {zero} {suc (suc ())}
+lem-2-2-1 {suc zero} {zero} {zero} = refl
+lem-2-2-1 {suc zero} {zero} {suc zero} = refl
+lem-2-2-1 {suc zero} {zero} {suc (suc ())}
+lem-2-2-1 {suc zero} {suc zero} {zero} = refl
+lem-2-2-1 {suc zero} {suc zero} {suc zero} = refl
+lem-2-2-1 {suc zero} {suc zero} {suc (suc ())}
+lem-2-2-1 {suc zero} {suc (suc ())}
+lem-2-2-1 {suc (suc ())}
+
+
+lem-2-2 : ∀ {k : ℕ} {a b : Vec 𝔹 (suc k)} -> ⟦ a ⟧ + ⟦ b ⟧ ≡ ⟦ proj₂ (a ⊕ b) ∷ proj₁ (a ⊕ b) ⟧
+lem-2-2 {zero} {zero ∷ []} {zero ∷ []} = refl
+lem-2-2 {zero} {zero ∷ []} {suc zero ∷ []} = refl
+lem-2-2 {zero} {zero ∷ []} {suc (suc ()) ∷ []}
+lem-2-2 {zero} {suc zero ∷ []} {zero ∷ []} = refl
+lem-2-2 {zero} {suc zero ∷ []} {suc zero ∷ []} = refl
+lem-2-2 {zero} {suc zero ∷ []} {suc (suc ()) ∷ []}
+lem-2-2 {zero} {suc (suc ()) ∷ []} {b ∷ []}
+lem-2-2 {suc k} {a ∷ xa} {b ∷ xb} rewrite
+  sym (Σspec-step≡Σ {suc (suc k)} (a ∷ xa)) | sym (Σspec-step≡Σ {suc (suc k)} (b ∷ xb)) |
+  sym (Σspec-step≡Σ {suc (suc (suc k))} (((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) div𝔹) ∷ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) mod𝔹) ∷ proj₁ (xa ⊕ xb))) |
+  sym (Σspec-step≡Σ {suc (suc k)} (((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) mod𝔹) ∷ proj₁ (xa ⊕ xb))) |
+  m+0≡m {2 ^ k} | m+0≡m {(2 ^ k) + (2 ^ k)} = begin
+    toℕ a * ((2 ^ k) + (2 ^ k)) + ⟦ xa ⟧ + (toℕ b * ((2 ^ k) + (2 ^ k)) + ⟦ xb ⟧) ≡⟨ a+b+c+d≡a+c+b+d {toℕ a * ((2 ^ k) + (2 ^ k))} ⟩
+    toℕ a * ((2 ^ k) + (2 ^ k)) + toℕ b * ((2 ^ k) + (2 ^ k)) + (⟦ xa ⟧ + ⟦ xb ⟧) ≡⟨ cong (_+_ (toℕ a * ((2 ^ k) + (2 ^ k)) + toℕ b * ((2 ^ k) + (2 ^ k)))) ih ⟩
+    toℕ a * ((2 ^ k) + (2 ^ k)) + toℕ b * ((2 ^ k) + (2 ^ k)) + (toℕ (proj₂ (xa ⊕ xb)) * ((2 ^ k) + (2 ^ k)) + ⟦ proj₁ (xa ⊕ xb) ⟧)
+      ≡⟨ sym (CS.+-assoc (toℕ a * ((2 ^ k) + (2 ^ k)) + toℕ b * ((2 ^ k) + (2 ^ k))) (toℕ (proj₂ (xa ⊕ xb)) * ((2 ^ k) + (2 ^ k))) ⟦ proj₁ (xa ⊕ xb) ⟧) ⟩
+    toℕ a * ((2 ^ k) + (2 ^ k)) + toℕ b * ((2 ^ k) + (2 ^ k)) + toℕ (proj₂ (xa ⊕ xb)) * ((2 ^ k) + (2 ^ k)) + ⟦ proj₁ (xa ⊕ xb) ⟧ ≡⟨ a*x+b*x+c*x+d≡x*a+b+c+d {(2 ^ k) + (2 ^ k)} {toℕ a} {toℕ b} ⟩
+    ((2 ^ k) + (2 ^ k)) * ( toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb)) ) + ⟦ proj₁ (xa ⊕ xb) ⟧
+      ≡⟨ m+n≡m'+n' {((2 ^ k) + (2 ^ k)) * ( toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb)) )} {m' = ((2 ^ k) + (2 ^ k)) * ( toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) div𝔹) * 2 + toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) mod𝔹) )}
+        (cong (_*_ ((2 ^ k) + (2 ^ k))) (lem-2-2-1 {a} {b} {proj₂ (xa ⊕ xb)}))
+        refl ⟩
+    ((2 ^ k) + (2 ^ k)) * ( toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) div𝔹) * 2 + toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) mod𝔹) ) + ⟦ proj₁ (xa ⊕ xb) ⟧
+      ≡⟨ x*a*x+b+c≡a*x+b*x+x+c {(2 ^ k) + (2 ^ k)} {toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) div𝔹)} ⟩
+    toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) div𝔹) * ((2 ^ k) + (2 ^ k) + ((2 ^ k) + (2 ^ k))) + toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) mod𝔹) * ((2 ^ k) + (2 ^ k)) + ⟦ proj₁ (xa ⊕ xb) ⟧
+      ≡⟨ CS.+-assoc (toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) div𝔹) * ((2 ^ k) + (2 ^ k) + ((2 ^ k) + (2 ^ k)))) (toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) mod𝔹) * ((2 ^ k) + (2 ^ k))) ⟦ proj₁ (xa ⊕ xb) ⟧ ⟩
+    toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) div𝔹) * ((2 ^ k) + (2 ^ k) + ((2 ^ k) + (2 ^ k))) + (toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) mod𝔹) * ((2 ^ k) + (2 ^ k)) + ⟦ proj₁ (xa ⊕ xb) ⟧)  ∎
+  where
+  ih : ⟦ xa ⟧ + ⟦ xb ⟧ ≡ toℕ (proj₂ (xa ⊕ xb)) * ((2 ^ k) + (2 ^ k)) + ⟦ proj₁ (xa ⊕ xb) ⟧
+  ih rewrite 2^k+2^k≡2^sk {k} | Σspec-step≡Σ {suc (suc k)} (proj₂ (xa ⊕ xb) ∷ proj₁ (xa ⊕ xb))= lem-2-2 {k} {xa} {xb}
+
+  a+b+c+d≡a+c+b+d : ∀ {a b c d : ℕ} -> a + b + (c + d) ≡ a + c + (b + d)
+  a+b+c+d≡a+c+b+d {a} {b} {c} {d} = solve 4 (λ a b c d -> a :+ b :+ (c :+ d) := a :+ c :+ (b :+ d)) refl a b c d
+    where
+    open Data.Nat.Properties.SemiringSolver
+
+  a*x+b*x+c*x+d≡x*a+b+c+d : ∀ {x a b c d : ℕ} -> a * x + b * x + c * x + d ≡ x * (a + b + c) + d
+  a*x+b*x+c*x+d≡x*a+b+c+d {x} {a} {b} {c} {d} = solve 5 (λ x a b c d -> a :* x :+ b :* x :+ c :* x :+ d := x :* (a :+ b :+ c) :+ d) refl x a b c d
+    where
+    open Data.Nat.Properties.SemiringSolver
+
+  x*a*x+b+c≡a*x+b*x+x+c : ∀ {x a b c : ℕ} -> x * (a * 2 + b) + c ≡ a * (x + x) + b * x + c
+  x*a*x+b+c≡a*x+b*x+x+c {x} {a} {b} {c} = solve 4 (λ x a b c -> x :* (a :* con 2 :+ b) :+ c := a :* (x :+ x) :+ b :* x :+ c) refl x a b c
+    where
+    open Data.Nat.Properties.SemiringSolver
