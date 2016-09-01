@@ -95,24 +95,24 @@ Top {suc k} = suc zero ∷ Top
 ≤-Top {suc k} {suc (suc ()) ∷ xs}
 
 
-lem1-1-1 : ∀ {k} -> Σ (Top {k}) ≡ (2 ^ k) ∸ 1 -- equiv to ⟦ Top {k} ⟧ ≡ (2 ^ k) ∸ 1
-lem1-1-1 {zero} = refl
-lem1-1-1 {suc k} rewrite lem1-1-1 {k} | +-right-identity (2 ^ k) = begin
+lem-1-1-aux1 : ∀ {k} -> Σ (Top {k}) ≡ (2 ^ k) ∸ 1 -- equiv to ⟦ Top {k} ⟧ ≡ (2 ^ k) ∸ 1
+lem-1-1-aux1 {zero} = refl
+lem-1-1-aux1 {suc k} rewrite lem-1-1-aux1 {k} | +-right-identity (2 ^ k) = begin
   (2 ^ k) + ((2 ^ k) ∸ 1) ≡⟨ sym (+-∸-assoc (2 ^ k) {2 ^ k} {1} (1≤2^k {k})) ⟩ refl
 
 
-lem1-1 : ∀ {k} {x : Vec 𝔹 (suc k)} -> sign ⟪ x ⟫ ≡ σ x
-lem1-1 {k} {zero ∷ xs} = refl
-lem1-1 {k} {suc zero ∷ xs} = aux₂ (- (2 ^ k) ℤ+ + Σ xs) aux
+lem-1-1 : ∀ {k} {x : Vec 𝔹 (suc k)} -> sign ⟪ x ⟫ ≡ σ x
+lem-1-1 {k} {zero ∷ xs} = refl
+lem-1-1 {k} {suc zero ∷ xs} = aux₂ (- (2 ^ k) ℤ+ + Σ xs) aux
   where
   aux₁ : - (2 ^ k) ℤ+ + ((2 ^ k) ∸ 1) ≡ - 1
   aux₁ = begin
     - (2 ^ k) ℤ+ + ((2 ^ k) ∸ 1) ≡⟨ cong (_ℤ+_ (- (2 ^ k))) (sym (⊖-≥ (1≤2^k {k}))) ⟩
-    - (2 ^ k) ℤ+ ((2 ^ k) ⊖ 1) ≡⟨ cong (_ℤ+_ (- (2 ^ k))) (⊖-ℤ- (2 ^ k) 1) ⟩
+    - (2 ^ k) ℤ+ ((2 ^ k) ⊖ 1) ≡⟨ cong (_ℤ+_ (- (2 ^ k))) (m⊖n≡mℤ-n (2 ^ k) 1) ⟩
     - (2 ^ k) ℤ+ (+ (2 ^ k) ℤ+ - 1) ≡⟨ sym (CR.+-assoc (- (2 ^ k)) (+ (2 ^ k)) (- 1)) ⟩
     (- (2 ^ k) ℤ+ + (2 ^ k)) ℤ+ - 1 ≡⟨ CR.+-comm (- (2 ^ k) ℤ+ + (2 ^ k)) (- 1) ⟩
     - 1 ℤ+ (- (2 ^ k) ℤ+ + (2 ^ k)) ≡⟨ cong (_ℤ+_ (- 1)) (CR.+-comm (- (2 ^ k)) (+ (2 ^ k))) ⟩
-    - 1 ℤ+ (+ (2 ^ k) ℤ- + (2 ^ k)) ≡⟨ cong (_ℤ+_ (- 1)) (sym (⊖-ℤ- (2 ^ k) (2 ^ k))) ⟩
+    - 1 ℤ+ (+ (2 ^ k) ℤ- + (2 ^ k)) ≡⟨ cong (_ℤ+_ (- 1)) (sym (m⊖n≡mℤ-n (2 ^ k) (2 ^ k))) ⟩
     - 1 ℤ+ ((2 ^ k) ⊖ (2 ^ k)) ≡⟨ cong (_ℤ+_ (- 1)) (IntegerProp.n⊖n≡0 (2 ^ k)) ⟩
     - 1 ∎
 
@@ -121,9 +121,9 @@ lem1-1 {k} {suc zero ∷ xs} = aux₂ (- (2 ^ k) ℤ+ + Σ xs) aux
   aux₂ (Int.-[1+_] n) x≤ℤ-1 = refl
 
   aux : ⟪ suc zero ∷ xs ⟫ ℤ≤ - 1
-  aux rewrite sym aux₁ | sym (lem1-1-1 {k}) = ℤ≤-steps (- (2 ^ k)) (Int.+≤+ (≤-Top {k}))
+  aux rewrite sym aux₁ | sym (lem-1-1-aux1 {k}) = ℤ≤-steps (- (2 ^ k)) (Int.+≤+ (≤-Top {k}))
 
-lem1-1 {k} {suc (suc ()) ∷ xs}
+lem-1-1 {k} {suc (suc ()) ∷ xs}
 
 
 _mod𝔹 : ℕ -> 𝔹
@@ -185,26 +185,26 @@ _⊕_ : ∀ {k : ℕ} -> Vec 𝔹 k -> Vec 𝔹 k -> (Vec 𝔹 k × 𝔹)
 -- r : ∀ {k : ℕ} (i : ℕ) -> Vec 𝔹 (i + suc k) -> Vec 𝔹 (i + suc k) -> 𝔹
 -- r i a b = ( (toℕ (i ←! a) ) + (toℕ (i ←! b) ) + (toℕ (∁ i a b) ) ) mod𝔹
 
--- lem-2-2-1 : ∀ {k : ℕ} {a b : 𝔹} {xa xb : Vec 𝔹 k} -> ⟦ a ∷ xa ⟧ + ⟦ b ∷ xb ⟧ ≡ ⟦ xa ⟧ + ⟦ xb ⟧ + toℕ a * (2 ^ k) + toℕ b * (2 ^ k)
--- lem-2-2-1 = ?
+-- lem-2-2-aux1 : ∀ {k : ℕ} {a b : 𝔹} {xa xb : Vec 𝔹 k} -> ⟦ a ∷ xa ⟧ + ⟦ b ∷ xb ⟧ ≡ ⟦ xa ⟧ + ⟦ xb ⟧ + toℕ a * (2 ^ k) + toℕ b * (2 ^ k)
+-- lem-2-2-aux1 = ?
 
 
-lem-2-2-1 : ∀ {a b c : 𝔹} -> toℕ a + toℕ b + toℕ c ≡ toℕ ((toℕ a + toℕ b + toℕ c) div𝔹) * 2 + toℕ ((toℕ a + toℕ b + toℕ c) mod𝔹)
-lem-2-2-1 {zero} {zero} {zero} = refl
-lem-2-2-1 {zero} {zero} {suc zero} = refl
-lem-2-2-1 {zero} {zero} {suc (suc ())}
-lem-2-2-1 {zero} {suc zero} {zero} = refl
-lem-2-2-1 {zero} {suc zero} {suc zero} = refl
-lem-2-2-1 {zero} {suc zero} {suc (suc ())}
-lem-2-2-1 {zero} {suc (suc ())}
-lem-2-2-1 {suc zero} {zero} {zero} = refl
-lem-2-2-1 {suc zero} {zero} {suc zero} = refl
-lem-2-2-1 {suc zero} {zero} {suc (suc ())}
-lem-2-2-1 {suc zero} {suc zero} {zero} = refl
-lem-2-2-1 {suc zero} {suc zero} {suc zero} = refl
-lem-2-2-1 {suc zero} {suc zero} {suc (suc ())}
-lem-2-2-1 {suc zero} {suc (suc ())}
-lem-2-2-1 {suc (suc ())}
+lem-2-2-aux1 : ∀ {a b c : 𝔹} -> toℕ a + toℕ b + toℕ c ≡ toℕ ((toℕ a + toℕ b + toℕ c) div𝔹) * 2 + toℕ ((toℕ a + toℕ b + toℕ c) mod𝔹)
+lem-2-2-aux1 {zero} {zero} {zero} = refl
+lem-2-2-aux1 {zero} {zero} {suc zero} = refl
+lem-2-2-aux1 {zero} {zero} {suc (suc ())}
+lem-2-2-aux1 {zero} {suc zero} {zero} = refl
+lem-2-2-aux1 {zero} {suc zero} {suc zero} = refl
+lem-2-2-aux1 {zero} {suc zero} {suc (suc ())}
+lem-2-2-aux1 {zero} {suc (suc ())}
+lem-2-2-aux1 {suc zero} {zero} {zero} = refl
+lem-2-2-aux1 {suc zero} {zero} {suc zero} = refl
+lem-2-2-aux1 {suc zero} {zero} {suc (suc ())}
+lem-2-2-aux1 {suc zero} {suc zero} {zero} = refl
+lem-2-2-aux1 {suc zero} {suc zero} {suc zero} = refl
+lem-2-2-aux1 {suc zero} {suc zero} {suc (suc ())}
+lem-2-2-aux1 {suc zero} {suc (suc ())}
+lem-2-2-aux1 {suc (suc ())}
 
 
 lem-2-2 : ∀ {k : ℕ} {a b : Vec 𝔹 (suc k)} -> ⟦ a ⟧ + ⟦ b ⟧ ≡ ⟦ proj₂ (a ⊕ b) ∷ proj₁ (a ⊕ b) ⟧
@@ -227,7 +227,7 @@ lem-2-2 {suc k} {a ∷ xa} {b ∷ xb} rewrite
     toℕ a * ((2 ^ k) + (2 ^ k)) + toℕ b * ((2 ^ k) + (2 ^ k)) + toℕ (proj₂ (xa ⊕ xb)) * ((2 ^ k) + (2 ^ k)) + ⟦ proj₁ (xa ⊕ xb) ⟧ ≡⟨ a*x+b*x+c*x+d≡x*a+b+c+d {(2 ^ k) + (2 ^ k)} {toℕ a} {toℕ b} ⟩
     ((2 ^ k) + (2 ^ k)) * ( toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb)) ) + ⟦ proj₁ (xa ⊕ xb) ⟧
       ≡⟨ m+n≡m'+n' {((2 ^ k) + (2 ^ k)) * ( toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb)) )} {m' = ((2 ^ k) + (2 ^ k)) * ( toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) div𝔹) * 2 + toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) mod𝔹) )}
-        (cong (_*_ ((2 ^ k) + (2 ^ k))) (lem-2-2-1 {a} {b} {proj₂ (xa ⊕ xb)}))
+        (cong (_*_ ((2 ^ k) + (2 ^ k))) (lem-2-2-aux1 {a} {b} {proj₂ (xa ⊕ xb)}))
         refl ⟩
     ((2 ^ k) + (2 ^ k)) * ( toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) div𝔹) * 2 + toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) mod𝔹) ) + ⟦ proj₁ (xa ⊕ xb) ⟧
       ≡⟨ x*a*x+b+c≡a*x+b*x+x+c {(2 ^ k) + (2 ^ k)} {toℕ ((toℕ a + toℕ b + toℕ (proj₂ (xa ⊕ xb))) div𝔹)} ⟩

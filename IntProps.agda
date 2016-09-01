@@ -20,11 +20,11 @@ open import NatProps
 - x = Int.- (+ x)
 
 
-⊖-ℤ- : ∀ m n → m ⊖ n ≡ + m ℤ- + n
-⊖-ℤ- zero zero = refl
-⊖-ℤ- zero (suc n) = refl
-⊖-ℤ- (suc m) zero rewrite m+0≡m {m} | m+0≡m {m} = refl
-⊖-ℤ- (suc m) (suc n) = refl
+m⊖n≡mℤ-n : ∀ m n → m ⊖ n ≡ + m ℤ- + n
+m⊖n≡mℤ-n zero zero = refl
+m⊖n≡mℤ-n zero (suc n) = refl
+m⊖n≡mℤ-n (suc m) zero rewrite m+0≡m {m} | m+0≡m {m} = refl
+m⊖n≡mℤ-n (suc m) (suc n) = refl
 
 ⊖-≥ : ∀ {m n} → m ≥ n → m ⊖ n ≡ + (m ∸ n)
 ⊖-≥ z≤n       = refl
