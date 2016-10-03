@@ -16,7 +16,7 @@ open import Data.Sign using (Sign)
 open import Relation.Binary.PropositionalEquality as PropEq
   using (_≡_; _≢_; refl; sym; cong; cong₂)
 open PropEq.≡-Reasoning
--- open import Relation.Nullary using (¬_; Dec; yes; no)
+open import Relation.Nullary using (¬_; Dec; yes; no)
 
 open import Algebra
 import Data.Integer.Properties as IntegerProp
@@ -130,6 +130,23 @@ _mod𝔹 : ℕ -> 𝔹
 0 mod𝔹 = zero
 1 mod𝔹 = suc zero
 suc (suc a) mod𝔹 = a mod𝔹
+
+
+
+_mod_ : ℕ -> ℕ -> ℕ
+a mod b = modaux a b 0
+  where
+  modaux : ℕ -> ℕ -> ℕ -> ℕ
+  modaux zero b acc = acc
+  modaux (suc a) b acc with b ≟ (suc acc)
+  modaux (suc a) b acc | yes _ = modaux a b 0
+  modaux (suc a) b acc | no _ = modaux a b (suc acc)
+
+
+mod𝔹spec : ∀ {a} -> toℕ ( a mod𝔹 ) ≡ a mod 2
+mod𝔹spec {zero} = refl
+mod𝔹spec {suc zero} = refl
+mod𝔹spec {suc (suc a)} = mod𝔹spec {a}
 
 
 _div𝔹 : ℕ -> 𝔹
