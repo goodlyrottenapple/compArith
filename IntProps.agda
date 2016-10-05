@@ -9,6 +9,9 @@ open ≤-Reasoning
 open import Data.Nat.Properties
 
 open import Data.Integer as Int using (ℤ; +_; sign; _⊖_) renaming (_*_ to _ℤ*_; _+_ to _ℤ+_; _-_ to _ℤ-_; _≤_ to _ℤ≤_)
+open Int.≤-Reasoning
+  renaming (begin_ to startℤ_; _∎ to _ℤ□; _≡⟨_⟩_ to _≡ℤ⟨_⟩_; _≤⟨_⟩_ to _ℤ≤⟨_⟩_)
+  
 open import Relation.Binary.PropositionalEquality as PropEq
   using (_≡_; _≢_; refl; sym; cong; cong₂)
 open import Relation.Nullary using (¬_; Dec; yes; no)
@@ -52,6 +55,16 @@ m⊖n≡mℤ-n (suc m) (suc n) = refl
 ℤ≤-refl {+ m}          {Int.-[1+ n ]}  ()
 ℤ≤-refl {Int.-[1+ m ]} {+ n}           ()
 ℤ≤-refl {Int.-[1+ m ]} {Int.-[1+ .m ]} refl = Int.-≤- (≤′⇒≤ ≤′-refl)
+
+-k+mℤ≤m : ∀ {m} k → (- k) ℤ+ m ℤ≤ m
+-k+mℤ≤m {+ m} zero = ℤ≤-refl refl
+-k+mℤ≤m {Int.-[1+ m ]} zero = ℤ≤-refl refl
+-k+mℤ≤m {+ zero} (suc k) = Int.-≤+
+-k+mℤ≤m {+ (suc m)} (suc k) with k ≤? m
+-k+mℤ≤m {+ (suc m)} (suc k) | yes k≤m rewrite ⊖-≥ {m} {k} k≤m = Int.+≤+ (k-m≤k (suc m) (suc k))
+-k+mℤ≤m {+ (suc m)} (suc k) | no ¬k≤m rewrite ⊖-< {m} {k} (¬≤-> ¬k≤m) | proj₁ (proj₂ (-∃ (¬≤-> ¬k≤m))) = Int.-≤+
+-k+mℤ≤m {Int.-[1+ zero ]} (suc k) = Int.-≤- z≤n
+-k+mℤ≤m {Int.-[1+ (suc m) ]} (suc k) = Int.-≤- (≤-steps (suc k) (≤′⇒≤ ≤′-refl))
 
 
 ℤ≤-steps : ∀ {m n} k → m ℤ≤ n → k ℤ+ m ℤ≤ k ℤ+ n
@@ -144,3 +157,7 @@ m⊖n≡mℤ-n (suc m) (suc n) = refl
       m≤n⇒m-k≤n-k k (s≤s n≤m)
 
 ℤ≤-steps {Int.-[1+ m ]} {Int.-[1+ n ]} (Int.-[1+ k ])     (Int.-≤- n≤m) = Int.-≤- (s≤s (≤-steps2 k n≤m))
+
+-≤0 : ∀ k -> - k ℤ≤ + 0
+-≤0 {zero} = Int.+≤+ z≤n
+-≤0 {suc k} = Int.-≤+

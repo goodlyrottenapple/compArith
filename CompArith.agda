@@ -10,13 +10,15 @@ open import Data.Nat.Properties
 open import Data.Nat.Properties.Simple
 
 open import Data.Integer as Int using (ℤ; +_; sign; _⊖_) renaming (_*_ to _ℤ*_; _+_ to _ℤ+_; _-_ to _ℤ-_; _≤_ to _ℤ≤_)
-
+open Int.≤-Reasoning
+  renaming (begin_ to startℤ_; _∎ to _ℤ□; _≡⟨_⟩_ to _≡ℤ⟨_⟩_; _≤⟨_⟩_ to _ℤ≤⟨_⟩_)
+  
 open import Data.Vec
 open import Data.Sign using (Sign)
 open import Relation.Binary.PropositionalEquality as PropEq
   using (_≡_; _≢_; refl; sym; cong; cong₂)
 open PropEq.≡-Reasoning
-open import Relation.Nullary using (¬_; Dec; yes; no)
+-- open import Relation.Nullary using (¬_; Dec; yes; no)
 
 open import Algebra
 import Data.Integer.Properties as IntegerProp
@@ -87,12 +89,24 @@ Top : ∀ {k : ℕ} -> Vec 𝔹 k
 Top {zero} = []
 Top {suc k} = suc zero ∷ Top
 
+Bot : ∀ {k : ℕ} -> Vec 𝔹 k
+Bot {zero} = []
+Bot {suc k} = zero ∷ Bot
+
 
 ≤-Top : ∀ {k} {x : Vec 𝔹 k} -> Σ x ≤ Σ (Top {k})
 ≤-Top {zero} {[]} = z≤n
 ≤-Top {suc k} {zero ∷ xs} = ≤-steps {Σ xs} {Σ {k} Top} (2 ^ k) (≤-Top {k})
 ≤-Top {suc k} {suc zero ∷ xs} = ≤-steps2 (2 ^ k) (≤-Top {k})
 ≤-Top {suc k} {suc (suc ()) ∷ xs}
+
+
+ΣBot≡0 : ∀ {k} -> Σ (Bot {k}) ≡ 0
+ΣBot≡0 {zero} = refl
+ΣBot≡0 {suc k} = ΣBot≡0 {k}
+
+Bot-≤ : ∀ {k} {x : Vec 𝔹 k} -> Σ (Bot {k}) ≤ Σ x
+Bot-≤ {k} {x} rewrite ΣBot≡0 {k} = z≤n
 
 
 lem-1-1-aux1 : ∀ {k} -> Σ (Top {k}) ≡ (2 ^ k) ∸ 1 -- equiv to ⟦ Top {k} ⟧ ≡ (2 ^ k) ∸ 1
@@ -130,18 +144,6 @@ _mod𝔹 : ℕ -> 𝔹
 0 mod𝔹 = zero
 1 mod𝔹 = suc zero
 suc (suc a) mod𝔹 = a mod𝔹
-
-
-
-_mod_ : ℕ -> ℕ -> ℕ
-a mod b = modaux a b 0
-  where
-  modaux : ℕ -> ℕ -> ℕ -> ℕ
-  modaux zero b acc = acc
-  modaux (suc a) b acc with b ≟ (suc acc)
-  modaux (suc a) b acc | yes _ = modaux a b 0
-  modaux (suc a) b acc | no _ = modaux a b (suc acc)
-
 
 mod𝔹spec : ∀ {a} -> toℕ ( a mod𝔹 ) ≡ a mod 2
 mod𝔹spec {zero} = refl
@@ -269,3 +271,32 @@ lem-2-2 {suc k} {a ∷ xa} {b ∷ xb} rewrite
   x*a*x+b+c≡a*x+b*x+x+c {x} {a} {b} {c} = solve 4 (λ x a b c -> x :* (a :* con 2 :+ b) :+ c := a :* (x :+ x) :+ b :* x :+ c) refl x a b c
     where
     open Data.Nat.Properties.SemiringSolver
+
+
+-- lemma 2.4
+
+⟪Top⟫ : ∀ {k : ℕ} -> Vec 𝔹 k
+⟪Top⟫ {zero} = []
+⟪Top⟫ {suc k} = zero ∷ Top
+
+
+⟪Bot⟫ : ∀ {k : ℕ} -> Vec 𝔹 k
+⟪Bot⟫ {zero} = []
+⟪Bot⟫ {suc k} = suc zero ∷ Bot
+
+
+
+≤-⟪Top⟫ : ∀ {k} {x : Vec 𝔹 (suc k)} -> ⟪ x ⟫ ℤ≤ ⟪ ⟪Top⟫ {suc k} ⟫
+≤-⟪Top⟫ {k} {zero ∷ xs} = Int.+≤+ (≤-Top {k})
+≤-⟪Top⟫ {k} {suc zero ∷ xs} = startℤ
+  (- (2 ^ k)) ℤ+ + Σ xs ℤ≤⟨ ℤ≤-steps (- (2 ^ k)) ( Int.+≤+ (≤-Top {k}) ) ⟩
+  (- (2 ^ k)) ℤ+ + Σ (Top {k}) ℤ≤⟨ -k+mℤ≤m (2 ^ k) ⟩
+  ⟪ ⟪Top⟫ {suc k} ⟫ ℤ□
+≤-⟪Top⟫ {k} {suc (suc ()) ∷ xs}
+
+
+⟪Bot⟫-≤ : ∀ {k} {x : Vec 𝔹 (suc k)} -> ⟪ ⟪Bot⟫ {suc k} ⟫ ℤ≤ ⟪ x ⟫
+⟪Bot⟫-≤ {k} {zero ∷ xs} rewrite ΣBot≡0 {k} | CR.+-comm (- (2 ^ k)) (+ 0) | (proj₁ CR.+-identity) (- (2 ^ k)) = startℤ
+  - (2 ^ k) ℤ≤⟨ -≤0 (2 ^ k) ⟩ + 0 ℤ≤⟨ Int.+≤+ z≤n ⟩ + Σ xs ℤ□ 
+⟪Bot⟫-≤ {k} {suc zero ∷ xs} rewrite ΣBot≡0 {k} = ℤ≤-steps (- (2 ^ k)) (Int.+≤+ z≤n)
+⟪Bot⟫-≤ {x = suc (suc ()) ∷ xs}

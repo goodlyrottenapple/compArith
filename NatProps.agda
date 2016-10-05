@@ -15,6 +15,15 @@ _^_ : ℕ → ℕ → ℕ
 m ^ zero = 1
 m ^ suc x = m * (m ^ x)
 
+_mod_ : ℕ -> ℕ -> ℕ
+a mod b = modaux a b 0
+  where
+  modaux : ℕ -> ℕ -> ℕ -> ℕ
+  modaux zero b acc = acc
+  modaux (suc a) b acc with b ≟ (suc acc)
+  modaux (suc a) b acc | yes _ = modaux a b 0
+  modaux (suc a) b acc | no _ = modaux a b (suc acc)
+
 
 m+0≡m : ∀ {m} -> m + 0 ≡ m
 m+0≡m {0} = refl
