@@ -15,14 +15,15 @@ _^_ : ℕ → ℕ → ℕ
 m ^ zero = 1
 m ^ suc x = m * (m ^ x)
 
-_mod_ : ℕ -> ℕ -> ℕ
-a mod b = modaux a b 0
-  where
-  modaux : ℕ -> ℕ -> ℕ -> ℕ
-  modaux zero b acc = acc
-  modaux (suc a) b acc with b ≟ (suc acc)
-  modaux (suc a) b acc | yes _ = modaux a b 0
-  modaux (suc a) b acc | no _ = modaux a b (suc acc)
+-- modaux : ℕ -> ℕ -> ℕ -> ℕ
+-- modaux zero b acc = acc
+-- modaux (suc a) b acc with b ≟ (suc acc)
+-- modaux (suc a) b acc | yes _ = modaux a b 0
+-- modaux (suc a) b acc | no _ = modaux a b (suc acc)
+--
+-- _mod_ : ℕ -> ℕ -> ℕ
+-- a mod b = modaux a b 0
+--
 
 
 m+0≡m : ∀ {m} -> m + 0 ≡ m
@@ -40,10 +41,18 @@ m+n≡m'+n' refl refl = refl
 2^k+2^k≡2^sk {0} = refl
 2^k+2^k≡2^sk {suc k} rewrite m+0≡m {2 ^ k} | m+0≡m {(2 ^ k) + (2 ^ k)} = refl
 
+≤-refl : ∀ {m n} → m ≡ n → m ≤ n
+≤-refl refl = ≤′⇒≤ ≤′-refl
+
 
 ≤-steps2 : ∀ {m n} k → m ≤ n → k + m ≤ k + n
 ≤-steps2 zero m≤n = m≤n
 ≤-steps2 (suc k) m≤n = s≤s (≤-steps2 k m≤n)
+
+
+≤-steps3 : ∀ {m n} (o p : ℕ) → m ≤ n → o ≤ p → o + m ≤ p + n
+≤-steps3 {m} {n} zero p m≤n z≤n = start m ≤⟨ m≤n ⟩ n ≤⟨ m≤m+n n p ⟩ n + p ≤⟨ ≤-refl (+-comm n p) ⟩ p + n □
+≤-steps3 {m} {n} (suc o) (suc p) m≤n (s≤s o≤p) = s≤s (≤-steps3 o p m≤n o≤p)
 
 
 ≤-*-steps : ∀ {m n} k → 1 ≤ k -> m ≤ n → m ≤ k * n
@@ -71,10 +80,6 @@ m+n≡m'+n' refl refl = refl
 >-¬≤ (s≤s (s≤s m>n)) (s≤s m≤n) = >-¬≤ m≤n m>n
 
 
-≤-refl : ∀ {m n} → m ≡ n → m ≤ n
-≤-refl refl = ≤′⇒≤ ≤′-refl
-
-
 m≤n⇒m-k≤n-k : ∀ {m n} k -> m ≤ n -> m ∸ k ≤ n ∸ k
 m≤n⇒m-k≤n-k 0 m≤n = m≤n
 m≤n⇒m-k≤n-k {0} (suc k) m≤n = z≤n
@@ -91,9 +96,9 @@ n≤m⇒k-m≤k-n (suc m) 0 (suc k) z≤n = start
   k ∸ m ≤⟨ n≤m⇒k-m≤k-n m 0 k z≤n ⟩ k ≤⟨ ≤′⇒≤ (≤′-step ≤′-refl) ⟩ suc k □
 n≤m⇒k-m≤k-n (suc m) (suc n) (suc k) (s≤s n≤m) = n≤m⇒k-m≤k-n m n k n≤m
 
-
-sx≤sy⇒x≤y : ∀ {x y} -> suc x ≤ suc y -> x ≤ y
-sx≤sy⇒x≤y (s≤s x≤y) = x≤y
+-- use ≤-pred
+-- sx≤sy⇒x≤y : ∀ {x y} -> suc x ≤ suc y -> x ≤ y
+-- sx≤sy⇒x≤y (s≤s x≤y) = x≤y
 
 
 k-m≤k : ∀ k m -> k ∸ m ≤ k

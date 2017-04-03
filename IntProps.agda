@@ -11,7 +11,7 @@ open import Data.Nat.Properties
 open import Data.Integer as Int using (ℤ; +_; sign; _⊖_) renaming (_*_ to _ℤ*_; _+_ to _ℤ+_; _-_ to _ℤ-_; _≤_ to _ℤ≤_)
 open Int.≤-Reasoning
   renaming (begin_ to startℤ_; _∎ to _ℤ□; _≡⟨_⟩_ to _≡ℤ⟨_⟩_; _≤⟨_⟩_ to _ℤ≤⟨_⟩_)
-  
+
 open import Relation.Binary.PropositionalEquality as PropEq
   using (_≡_; _≢_; refl; sym; cong; cong₂)
 open import Relation.Nullary using (¬_; Dec; yes; no)
@@ -119,7 +119,7 @@ m⊖n≡mℤ-n (suc m) (suc n) = refl
   aux rewrite (sym m'≡) | (sym n'≡) = n≤m⇒k-m≤k-n n m (suc k) m≤n
 
   body : - (suc k ∸ m) ℤ≤ - (suc k ∸ n)
-  body rewrite m'≡- | n'≡- = Int.-≤- (sx≤sy⇒x≤y aux)
+  body rewrite m'≡- | n'≡- = Int.-≤- (≤-pred aux)
 
 ℤ≤-steps {+ m}          {Int.-[1+ n ]} k ()
 ℤ≤-steps {Int.-[1+ m ]} {+ n}          (+ k)              Int.-≤+ with suc m ≤? k
@@ -132,7 +132,7 @@ m⊖n≡mℤ-n (suc m) (suc n) = refl
 ℤ≤-steps {Int.-[1+ m ]} {+ _}          (Int.-[1+ k ])     Int.-≤+ | yes (s≤s {_} {n} k≤n)
   rewrite ⊖-≥ {n} {k} k≤n = Int.-≤+
 ℤ≤-steps {Int.-[1+_] m} {+_ n} (Int.-[1+_] k) Int.-≤+ | no ¬sk≤n
-  rewrite ⊖-< {n} {suc k} (¬≤-> ¬sk≤n) | proj₁ (proj₂ (-∃ (¬≤-> ¬sk≤n))) = Int.-≤- (sx≤sy⇒x≤y aux)
+  rewrite ⊖-< {n} {suc k} (¬≤-> ¬sk≤n) | proj₁ (proj₂ (-∃ (¬≤-> ¬sk≤n))) = Int.-≤- (≤-pred aux)
   where
   aux : suc (proj₁ (-∃ (¬≤-> ¬sk≤n))) ≤ suc (suc k) + m
   aux rewrite sym (proj₂ (proj₂ (-∃ (¬≤-> ¬sk≤n)))) = start
@@ -150,7 +150,7 @@ m⊖n≡mℤ-n (suc m) (suc n) = refl
   rewrite ⊖-≥ {k} {n} n≤k | ⊖-< {k} {m} (¬≤-> (λ z → ¬sm≤k (s≤s z))) | proj₁ (proj₂ (-∃ (¬≤-> ¬sm≤k))) = Int.-≤+
 ℤ≤-steps {Int.-[1+ m ]} {Int.-[1+ n ]} (+ k)              (Int.-≤- n≤m) | no ¬sm≤k | no ¬sn≤k
   rewrite ⊖-< {k} {suc m} (¬≤-> ¬sm≤k) | ⊖-< {k} {suc n} (¬≤-> ¬sn≤k) |
-    proj₁ (proj₂ (-∃ (¬≤-> ¬sm≤k))) | proj₁ (proj₂ (-∃ (¬≤-> ¬sn≤k))) = Int.-≤- (sx≤sy⇒x≤y body)
+    proj₁ (proj₂ (-∃ (¬≤-> ¬sm≤k))) | proj₁ (proj₂ (-∃ (¬≤-> ¬sn≤k))) = Int.-≤- (≤-pred body)
     where
     body : suc (proj₁ (-∃ (¬≤-> ¬sn≤k))) ≤ suc (proj₁ (-∃ (¬≤-> ¬sm≤k)))
     body rewrite sym (proj₂ (proj₂ (-∃ (¬≤-> ¬sm≤k)))) | sym (proj₂ (proj₂ (-∃ (¬≤-> ¬sn≤k)))) =
@@ -159,5 +159,5 @@ m⊖n≡mℤ-n (suc m) (suc n) = refl
 ℤ≤-steps {Int.-[1+ m ]} {Int.-[1+ n ]} (Int.-[1+ k ])     (Int.-≤- n≤m) = Int.-≤- (s≤s (≤-steps2 k n≤m))
 
 -≤0 : ∀ k -> - k ℤ≤ + 0
--≤0 {zero} = Int.+≤+ z≤n
--≤0 {suc k} = Int.-≤+
+-≤0 zero = Int.+≤+ z≤n
+-≤0 (suc k) = Int.-≤+
