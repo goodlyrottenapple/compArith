@@ -35,7 +35,8 @@ fun DAminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list \<time
 definition uplus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "+\<^sub>U" 90) where
 "as +\<^sub>U bs = fst (DA\<^sup>+ (False # as) (False # bs))"
 
-definition splus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "+\<^sub>S" 90) where
+fun splus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "+\<^sub>S" 90) where
+"[] +\<^sub>S [] = []" |
 "as +\<^sub>S bs = fst (DA\<^sup>+ (hd as # as) (hd bs # bs))"
 
 definition tplus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "\<oplus>" 90) where
@@ -43,9 +44,10 @@ definition tplus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" 
 
 
 definition uminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "-\<^sub>U" 90) where
-"as -\<^sub>U bs = fst (DA\<^sup>- (False # as) (True # bs))"
+"as -\<^sub>U bs = fst (DA\<^sup>- (False # as) (False # bs))"
 
-definition sminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "-\<^sub>S" 90) where
+fun sminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "-\<^sub>S" 90) where
+"[] -\<^sub>S [] = []" | 
 "as -\<^sub>S bs = fst (DA\<^sup>- (hd as # as) (hd bs # bs))"
 
 definition tminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "\<ominus>" 90) where
@@ -118,25 +120,25 @@ by(case_tac "a mod 2") auto
 lemma to_from_mod_id: "\<And> a. \<lbrakk> \<lbrakk> \<lbrakk> a \<rbrakk>\<^sub>N mod 2 \<rbrakk>\<^sub>B \<rbrakk>\<^sub>N = \<lbrakk> a \<rbrakk>\<^sub>N" apply (induct_tac a) by auto
 lemma to_from_div_False: "\<And> a. \<lbrakk> \<lbrakk> \<lbrakk> a \<rbrakk>\<^sub>N div 2 \<rbrakk>\<^sub>B \<rbrakk>\<^sub>N = \<lbrakk> False \<rbrakk>\<^sub>N" apply (induct_tac a) by auto
 
-      
+lemma eval_eq_seval: "\<And> a. int \<lbrakk> a \<rbrakk> = \<lparr> False # a \<rparr>" unfolding seval.simps by simp
+
 lemma one_iff_three : "(\<forall>a b. length a = length b \<longrightarrow> \<lbrakk>a\<rbrakk> + \<lbrakk>b\<rbrakk> = \<lbrakk>a +\<^sub>U b\<rbrakk>) \<longleftrightarrow> (\<forall>a b. length a = length b \<longrightarrow> \<lparr>a\<rparr> + \<lparr>b\<rparr> = \<lparr>a +\<^sub>S b\<rparr>)"
 apply rule+
-apply (case_tac a ; case_tac b)
-apply (subst splus_def) apply simp
-apply (simp, simp)
+   apply (case_tac a ; case_tac b)
+    unfolding splus.simps
+apply (simp , simp , simp)
 defer
 apply rule+
 proof goal_cases
 case (1 a b)
   then have "length (False # a) = length (False # b)" by simp
   with 1 have subst2: "\<lparr> False # a \<rparr> + \<lparr> False # b \<rparr> = \<lparr> (False # a) +\<^sub>S (False # b) \<rparr>" by blast
-  have subst1: "\<And> a. int \<lbrakk> a \<rbrakk> = \<lparr> False # a \<rparr>" unfolding seval.simps by simp
   show ?case
   apply (rule int_int_eq[THEN subst])
   apply (rule Nat_Transfer.transfer_int_nat_functions(1)[THEN subst])
-  apply (subst subst1 , subst subst1)
+  apply (subst eval_eq_seval , subst eval_eq_seval)
   apply (subst subst2)
-  unfolding seval.simps splus_def list.sel(1)
+  unfolding seval.simps splus.simps list.sel(1)
   apply simp
   apply (subst to_from_mod_id)+
   apply (subst to_from_div_False)
@@ -154,7 +156,7 @@ next
     apply (subst Nat_Transfer.transfer_int_nat_functions(1))
     apply (subst 2(1))
     using 2 apply simp
-    unfolding uplus_def splus_def list.sel(1) DAplus.simps prod.sel
+    unfolding uplus_def splus.simps list.sel(1) DAplus.simps prod.sel
     apply simp
     unfolding to_from_div_id3 to_from_mod_id3 subst2
     apply(subst to_from_mod_id)+
@@ -162,10 +164,72 @@ next
     apply(subst DAplus_eq_len , simp add:subst2)+
     apply(cases a ; cases b ; cases "snd (DA\<^sup>+ as bs)")
     by auto
-qed   
+qed
 
+lemma two_iff_four : "(\<forall>a b. length a = length b \<longrightarrow> int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> = \<lparr>a -\<^sub>U b\<rparr>) \<longleftrightarrow> (\<forall>a b. length a = length b \<longrightarrow> \<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>a -\<^sub>S b\<rparr>)"
+apply rule+
+apply (case_tac a ; case_tac b)
+unfolding sminus.simps
+apply (simp , simp , simp)
+defer
+apply rule+
+proof goal_cases
+  case (1 a b)
+  then have "length (False # a) = length (False # b)" by simp
+  with 1 have subst1: "\<lparr> False # a \<rparr> - \<lparr> False # b \<rparr> = \<lparr> (False # a) -\<^sub>S (False # b) \<rparr>" by blast
+  
+  show ?case
+  apply (subst eval_eq_seval , subst eval_eq_seval)
+  apply (subst subst1)
+  unfolding seval.simps sminus.simps list.sel(1) uminus_def
+  apply simp
+  apply (cases "snd (DA\<^sup>- a b)")
+  by simp_all
+next
+  case (2 xs ys a as b bs)
+  then have subst2: "length as = length bs" by simp
+  have subst1: "\<And> a b as bs :: int. - a + as - (- b + bs) = - a + b + (as - bs)" by simp
+  show ?case 
+    unfolding 2 seval.simps
+    apply (subst subst1)
+    apply (subst 2(1))
+    using 2 apply simp
+    unfolding uminus_def sminus.simps list.sel(1) DAminus.simps prod.sel
+    apply simp
+    apply(subst DAminus_eq_len , simp add:subst2)+
+    unfolding to_from_div_id3 to_from_mod_id3 subst2
+    apply(cases a ; cases b ; cases "snd (DA\<^sup>- as bs)")
+    by auto
+qed
 
-lemma two_iff_four : "(\<forall>a b. length a = length b \<longrightarrow> \<lbrakk>a\<rbrakk> - \<lbrakk>b\<rbrakk> = \<lbrakk>a -\<^sub>U b\<rbrakk>) \<longleftrightarrow> (\<forall>a b. length a = length b \<longrightarrow> \<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>a -\<^sub>S b\<rparr>)"
-sorry
     
+lemma one_iff_two : "(\<forall>a b. length a = length b \<longrightarrow> \<lbrakk>a\<rbrakk> + \<lbrakk>b\<rbrakk> = \<lbrakk>a +\<^sub>U b\<rbrakk>) \<longleftrightarrow> (\<forall>a b. length a = length b \<longrightarrow> int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> = \<lparr>a -\<^sub>U b\<rparr>)"
+  apply rule+
+  defer
+  apply rule+
+proof goal_cases
+  case (2 a b)
+  have subst1: "\<And> a b c :: int. a = c + b \<Longrightarrow> a - b  = c" by simp
+  have subst2: "\<And> a b c :: int. a + c + b = a + (c + b)" by simp
+  from 2(1) have subst3: "\<forall>a b. length a = length b \<longrightarrow> int \<lbrakk> a \<rbrakk> + int \<lbrakk> b \<rbrakk> = int \<lbrakk> a +\<^sub>U b \<rbrakk>"
+    by fastforce
+      
+
+  show ?case
+    apply (rule subst1)
+    unfolding uminus_def DAminus.simps prod.sel seval.simps
+    apply (subst subst2)
+    apply (subst subst3)
+    using DAminus_eq_len 2 apply simp
+    apply(subst DAminus_eq_len , simp add:2(2))+
+    apply simp
+    apply (cases "snd (DA\<^sup>- a b)")
+      apply simp_all
+
+    sorry
+next
+  case (1 a b)
+  then show ?case sorry
+qed
+  
 end
