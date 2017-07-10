@@ -10,7 +10,8 @@ fun bool2nat :: "bool \<Rightarrow> nat" ("\<lbrakk> _ \<rbrakk>\<^sub>N" 70) wh
 
 fun nat2bool :: "nat \<Rightarrow> bool" ("\<lbrakk> _ \<rbrakk>\<^sub>B" 70) where
 "\<lbrakk> 0 \<rbrakk>\<^sub>B = False" |
-"\<lbrakk> _ \<rbrakk>\<^sub>B = True"
+"\<lbrakk> (Suc 0) \<rbrakk>\<^sub>B = True" |
+"\<lbrakk> _ \<rbrakk>\<^sub>B = undefined"
 
 
 fun DAplus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list \<times> bool" ("DA\<^sup>+") where
@@ -115,7 +116,7 @@ qed
 
 
 lemma to_from_mod_id2: "\<And> a :: nat. \<lbrakk> \<lbrakk> a mod 2 \<rbrakk>\<^sub>B \<rbrakk>\<^sub>N = a mod 2"
-by(case_tac "a mod 2") auto
+  by (case_tac "a mod 2", simp , case_tac nat) auto
 
 lemma to_from_mod_id: "\<And> a. \<lbrakk> \<lbrakk> \<lbrakk> a \<rbrakk>\<^sub>N mod 2 \<rbrakk>\<^sub>B \<rbrakk>\<^sub>N = \<lbrakk> a \<rbrakk>\<^sub>N" apply (induct_tac a) by auto
 lemma to_from_div_False: "\<And> a. \<lbrakk> \<lbrakk> \<lbrakk> a \<rbrakk>\<^sub>N div 2 \<rbrakk>\<^sub>B \<rbrakk>\<^sub>N = \<lbrakk> False \<rbrakk>\<^sub>N" apply (induct_tac a) by auto
@@ -232,4 +233,70 @@ next
   then show ?case sorry
 qed
   
+  
+lemma ueval_range : "length a = k \<Longrightarrow> \<lbrakk> a \<rbrakk> \<le> 2 ^ k - 1"
+  apply (induct a arbitrary: k)
+   apply simp_all
+  apply (case_tac a1)
+  by fastforce+
+
+    
+lemma tplus_ueval_iff_carry : 
+  "length a = length b \<Longrightarrow> 
+    \<lbrakk>a\<rbrakk> + \<lbrakk>b\<rbrakk> = \<lbrakk>a \<oplus> b\<rbrakk> \<longleftrightarrow> snd (DA\<^sup>+ a b) = False"
+apply rule
+apply (rule ccontr)
+proof goal_cases
+case 1
+  then have 2: "snd (DA\<^sup>+ a b) = True" by simp
+  have "\<lbrakk> a \<rbrakk> + \<lbrakk> b \<rbrakk> = \<lbrakk> a +\<^sub>U b \<rbrakk>" using one 1 by simp
+  with 1 have "\<lbrakk> a \<oplus> b \<rbrakk> = \<lbrakk> a +\<^sub>U b \<rbrakk>" by simp
+  with 1 have "\<lbrakk> fst (DA\<^sup>+ a b) \<rbrakk> = \<lbrakk> snd (DA\<^sup>+ a b) # fst (DA\<^sup>+ a b) \<rbrakk>"
+    unfolding uplus_def tplus_def using plus_DA
+    by presburger
+  with 2 have "\<lbrakk> fst (DA\<^sup>+ a b) \<rbrakk> = \<lbrakk> True # fst (DA\<^sup>+ a b) \<rbrakk>" by simp
+  then show ?case by simp
+next
+  case 2
+  have "\<lbrakk> a \<rbrakk> + \<lbrakk> b \<rbrakk> = \<lbrakk> a +\<^sub>U b \<rbrakk>" using one 2 by simp
+  then have "\<lbrakk> a \<rbrakk> + \<lbrakk> b \<rbrakk> = \<lbrakk> snd (DA\<^sup>+ a b) # fst (DA\<^sup>+ a b) \<rbrakk>"
+    unfolding uplus_def using 2 plus_DA
+    by presburger
+  with 2 have "\<lbrakk> a \<rbrakk> + \<lbrakk> b \<rbrakk> = \<lbrakk> False # fst (DA\<^sup>+ a b) \<rbrakk>" by simp
+  then show ?case unfolding tplus_def ueval.simps bool2nat.simps by simp
+qed
+
+lemma tplus_ueval_iff_range : 
+  "length a = length b \<Longrightarrow> 
+    \<lbrakk>a\<rbrakk> + \<lbrakk>b\<rbrakk> = \<lbrakk>a \<oplus> b\<rbrakk> \<longleftrightarrow> (0 \<le> \<lbrakk>a\<rbrakk> + \<lbrakk>b\<rbrakk> \<and> \<lbrakk>a\<rbrakk> + \<lbrakk>b\<rbrakk> \<le> 2 ^ (length a) - 1)"
+  apply rule+
+proof goal_cases
+  case 1
+  show ?case unfolding 1
+    apply(rule ueval_range)
+    unfolding tplus_def
+    apply (rule DAplus_eq_len)
+    using 1 by simp
+next
+  case 2
+  then have 3: "\<lbrakk>a\<rbrakk> + \<lbrakk>b\<rbrakk> \<le> 2 ^ length a - 1" by simp
+  have "\<lbrakk>a\<rbrakk> + \<lbrakk>b\<rbrakk> = \<lbrakk> a +\<^sub>U b \<rbrakk>" using one 2 by simp
+  with 3 have "\<lbrakk>a +\<^sub>U b\<rbrakk> \<le> 2 ^ length a - 1" by simp
+  then have "\<lbrakk> snd (DA\<^sup>+ a b) # fst (DA\<^sup>+ a b) \<rbrakk> \<le> 2 ^ length a - 1" 
+    unfolding uplus_def tplus_def using plus_DA 2 by simp
+  then have "\<lbrakk> snd (DA\<^sup>+ a b) \<rbrakk>\<^sub>N * 2 ^ length a + \<lbrakk> fst (DA\<^sup>+ a b) \<rbrakk> \<le> 2 ^ length a - 1" 
+    unfolding ueval.simps using DAplus_eq_len 2 by simp
+  then have "snd (DA\<^sup>+ a b) = False" by (rule_tac ccontr, simp)
+  then show ?case
+  apply (subst tplus_ueval_iff_carry)
+  using 2 by simp_all
+qed
+  
+lemma tminus_ueval_iff_range:
+  fixes k :: nat
+  assumes "length a = Suc k"
+  shows "length a = length b \<Longrightarrow> 
+    int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> = \<lparr>a \<ominus> b\<rparr> \<longleftrightarrow> (- (2 ^ k) \<le> int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> \<and> int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> \<le> 2 ^ k - 1)" sorry
+
+
 end
