@@ -297,10 +297,8 @@ next
            apply(subst DAminus_eq_len, subst DAplus_eq_len, simp add:1, simp)
       unfolding not_False_eq_True bool2nat.simps DAplus.simps DAminus.simps prod.sel
       apply simp
-                           apply(subst DAminus_eq_len, subst DAplus_eq_len, simp add:1, simp)
-
-   
-  apply(subst DAminus_DAplus_compl, simp add: 1)+
+      apply(subst DAminus_eq_len, subst DAplus_eq_len, simp add:1, simp)
+      apply(subst DAminus_DAplus_compl, simp add: 1)+
 
   apply(cases "snd (DA\<^sup>+ a b)")
   apply simp_all
@@ -309,7 +307,7 @@ qed
   
   
   
-lemma ueval_range : "length a = k \<Longrightarrow> \<lbrakk> a \<rbrakk> \<le> 2 ^ k - 1"
+lemma ueval_range : "length a = k \<Longrightarrow> \<lbrakk> a \<rbrakk> \<le> (2 ^ k) - 1"
   apply (induct a arbitrary: k)
    apply simp_all
   apply (case_tac a1)
@@ -367,22 +365,7 @@ next
   using 2 by simp_all
 qed
 
-  (*
-lemma seval_range_upper : "length a = (Suc k) \<Longrightarrow> \<lparr> a \<rparr> \<le> 2 ^ k - 1"
-  apply (induct a arbitrary: k)
-   apply simp_all
-  apply (case_tac a1)
-     apply simp_all
-    using ueval_range
-      sorry
 
-lemma seval_range_lower : "length a = (Suc k) \<Longrightarrow> - (2 ^ k) \<le> \<lparr> a \<rparr>"
-    apply (induct a arbitrary: k)
-     apply simp_all
-  apply (case_tac a1)
-   apply simp_all
-    by (metis negative_zle of_nat_numeral of_nat_power)
-*)
 lemma tplus_seval_iff_range:
   fixes k :: nat
   assumes "length a = Suc k"
@@ -404,16 +387,37 @@ lemma tplus_seval_iff_range:
           by simp
     next
       case 2
-      show ?case
+        
+      have 3: "\<And> xs k. \<lbrakk> xs \<rbrakk> \<le> 2 ^ k - 1 \<Longrightarrow> int \<lbrakk> xs \<rbrakk> \<le> 2 ^ k - 1"
+      proof -
+        fix xs :: "bool list" and ka :: nat
+        assume "\<lbrakk> xs \<rbrakk> \<le> 2 ^ ka - 1"
+        then have "int \<lbrakk> xs \<rbrakk> + - 1 * int (2 ^ ka - 1) \<le> 0"
+          by simp
+        then show "int \<lbrakk> xs \<rbrakk> \<le> 2 ^ ka - 1"
+          by (simp add: of_nat_diff)
+      qed
+          
+      have 4: "\<And> a b c k. c \<ge> 0 \<Longrightarrow> length a = k \<Longrightarrow> int \<lbrakk> a \<rbrakk> - int b * c < 2 ^ k"
+        proof goal_cases
+          case (1 a b c k)
+          show ?case 
+            apply(rule zle_diff1_eq[THEN subst])
+            apply (subst diff_le_eq)
+            apply(rule order_class.order.trans)
+            apply (rule 3[where k = k])
+            using ueval_range 1 by (simp_all add: 1)
+        qed
+          
+          
+      show ?case unfolding 2 using assms
         apply (cases a ; cases b)
         using 2 apply simp_all
-          unfolding tplus_def DAplus.simps prod.sel seval.simps
+        unfolding tplus_def DAplus.simps prod.sel seval.simps
         apply (subst DAplus_eq_len, simp)
-        using assms apply simp
-        apply (case_tac aa ;case_tac aaa; case_tac "snd (DA\<^sup>+ list lista)")
+        apply(case_tac aa ; case_tac aaa ; case_tac "snd (DA\<^sup>- list lista)")
         apply simp_all
-        by (rule nat_0_le[THEN subst], simp, (subst transfer_int_nat_relations(2))+, 
-            smt ueval_range DAplus_eq_len not_le of_nat_1 of_nat_diff of_nat_less_iff of_nat_power one_le_power transfer_int_nat_numerals(3) zless_nat_eq_int_zless)+
+        by (rule 4 , simp, subst DAplus_eq_len, simp, simp)+          
     next
       case 3
       have subst1: "\<And> a b. length a = length b \<Longrightarrow> 0 \<le> \<lbrakk> a \<rbrakk> + \<lbrakk> b \<rbrakk> \<and> \<lbrakk> a \<rbrakk> + \<lbrakk> b \<rbrakk> \<le> 2 ^ length a - 1 \<Longrightarrow> \<lbrakk> fst (DA\<^sup>+ a b) \<rbrakk> = \<lbrakk> a \<rbrakk> + \<lbrakk> b \<rbrakk>" 
@@ -442,7 +446,7 @@ lemma tplus_seval_iff_range:
                 "- int (\<lbrakk> a \<rbrakk>\<^sub>N * 2 ^ length as) - int (\<lbrakk> b \<rbrakk>\<^sub>N * 2 ^ length as) + int (\<lbrakk> snd (DA\<^sup>+ as bs) \<rbrakk>\<^sub>N) * 2 ^ length as + int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk> \<le> 2 ^ length as - 1"
                 using 3 unfolding 1 k_def seval.simps by simp_all
 
-              have hyps2: "0 \<le> int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk>"  "int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk> \<le> 2 ^ length as - 1" 
+              have hyps2: "0 \<le> int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk>" "int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk> \<le> 2 ^ length as - 1" 
                  apply simp
                 apply(rule nat_0_le[THEN subst])
                  apply simp
@@ -474,5 +478,55 @@ lemma tplus_seval_iff_range:
             qed
 qed
 
+lemma tminus_ueval_iff_range:
+  fixes k :: nat
+  assumes "length a = Suc k"
+  shows "length a = length b \<Longrightarrow> 
+    int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> = \<lparr>a \<ominus> b\<rparr> \<longleftrightarrow> (- (2 ^ k) \<le>  int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> \<and> int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> \<le> 2 ^ k - 1)"
+  apply rule+
+    proof goal_cases
+      case 1
+      have 2: "\<And> x y. 0 \<le> x \<Longrightarrow> - x \<le> int y" by simp
+      show ?case unfolding 1 using assms
+        apply (cases a ; cases b)
+        using 1 apply simp_all
+        unfolding tminus_def DAminus.simps prod.sel seval.simps
+        apply (subst DAminus_eq_len, simp)
+        apply(case_tac aa ; case_tac aaa ; case_tac "snd (DA\<^sup>- list lista)") by (simp_all add:2)
+    next
+      case 2
+      have 3: "\<And> xs k. \<lbrakk> xs \<rbrakk> \<le> 2 ^ k - 1 \<Longrightarrow> int \<lbrakk> xs \<rbrakk> \<le> 2 ^ k - 1"
+      proof -
+        fix xs :: "bool list" and ka :: nat
+        assume "\<lbrakk> xs \<rbrakk> \<le> 2 ^ ka - 1"
+        then have "int \<lbrakk> xs \<rbrakk> + - 1 * int (2 ^ ka - 1) \<le> 0"
+          by simp
+        then show "int \<lbrakk> xs \<rbrakk> \<le> 2 ^ ka - 1"
+          by (simp add: of_nat_diff)
+      qed
+          
+      have 4: "\<And> a k. length a = k \<Longrightarrow> int \<lbrakk> a \<rbrakk> < 2 ^ k"
+        proof goal_cases
+          case (1 a k)
+          show ?case 
+            apply(rule zle_diff1_eq[THEN subst])
+            apply(rule 3)
+              using ueval_range 1 by simp
+        qed
+          
+          
+      show ?case unfolding 2 using assms
+        apply (cases a ; cases b)
+        using 2 apply simp_all
+        unfolding tminus_def DAminus.simps prod.sel seval.simps
+        apply (subst DAminus_eq_len, simp)
+        apply(case_tac aa ; case_tac aaa ; case_tac "snd (DA\<^sup>- list lista)")
+        apply simp_all 
+        by ((rule 4 , subst DAminus_eq_len, simp, simp) | (rule Orderings.order_class.order.strict_trans, rule 4 , subst DAminus_eq_len, simp, simp, simp))+
+
+    next
+      case 3
+      then show ?case sorry
+    qed
 
 end
