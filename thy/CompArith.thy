@@ -433,7 +433,7 @@ lemma tplus_seval_iff_range:
                 have subst3: "\<And> a b c d :: int.  a + b + (c + d) = a + c + (b + d)" by simp
                                         
                 have subst1: "- int (\<lbrakk> a \<rbrakk>\<^sub>N * 2 ^ length as) + int \<lbrakk> as \<rbrakk> + (- int (\<lbrakk> b \<rbrakk>\<^sub>N * 2 ^ length bs) + int \<lbrakk> bs \<rbrakk>) = 
-                      - int (\<lbrakk> a \<rbrakk>\<^sub>N * 2 ^ length as) - int (\<lbrakk> b \<rbrakk>\<^sub>N * 2 ^ length as) + int (\<lbrakk> snd (DA\<^sup>+ as bs) \<rbrakk>\<^sub>N) * 2 ^ length as + int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk>"
+                  - int (\<lbrakk> a \<rbrakk>\<^sub>N * 2 ^ length as) - int (\<lbrakk> b \<rbrakk>\<^sub>N * 2 ^ length as) + int (\<lbrakk> snd (DA\<^sup>+ as bs) \<rbrakk>\<^sub>N) * 2 ^ length as + int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk>"
                   apply(subst subst3)
                 apply(subst Nat_Transfer.transfer_int_nat_functions(1))
                 apply(subst one, simp add: len_eq)
@@ -482,7 +482,7 @@ lemma tminus_ueval_iff_range:
   fixes k :: nat
   assumes "length a = Suc k"
   shows "length a = length b \<Longrightarrow> 
-    int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> = \<lparr>a \<ominus> b\<rparr> \<longleftrightarrow> (- (2 ^ k) \<le>  int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> \<and> int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> \<le> 2 ^ k - 1)"
+    int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> = \<lparr>a \<ominus> b\<rparr> \<longleftrightarrow> (- (2 ^ k) \<le> int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> \<and> int \<lbrakk>a\<rbrakk> - int \<lbrakk>b\<rbrakk> \<le> 2 ^ k - 1)"
   apply rule+
     proof goal_cases
       case 1
@@ -511,7 +511,7 @@ lemma tminus_ueval_iff_range:
           show ?case 
             apply(rule zle_diff1_eq[THEN subst])
             apply(rule 3)
-              using ueval_range 1 by simp
+            using ueval_range 1 by simp
         qed
           
           
@@ -522,11 +522,66 @@ lemma tminus_ueval_iff_range:
         apply (subst DAminus_eq_len, simp)
         apply(case_tac aa ; case_tac aaa ; case_tac "snd (DA\<^sup>- list lista)")
         apply simp_all 
-        by ((rule 4 , subst DAminus_eq_len, simp, simp) | (rule Orderings.order_class.order.strict_trans, rule 4 , subst DAminus_eq_len, simp, simp, simp))+
+        by ((rule 4, subst DAminus_eq_len, simp, simp) | (rule Orderings.order_class.order.strict_trans, rule 4, subst DAminus_eq_len, simp, simp, simp))+
 
     next
       case 3
-      then show ?case sorry
+      then show ?case
+        apply (cases a; cases b)
+        unfolding tminus_def apply simp
+        using 3 apply (simp,simp)          
+          proof goal_cases
+            case (1 a as b bs)
+              with 3 have len_eq: "length as = length bs" by simp
+                from 3 assms 1 have k_def: "k = length as" by simp
+                have subst3: "\<And> a b c d :: int. a + b + (c + d) = a + c + (b + d)" by simp
+                                        
+                have subst1: "- int (\<lbrakk> a \<rbrakk>\<^sub>N * 2 ^ length as) + int \<lbrakk> as \<rbrakk> + (- int (\<lbrakk> b \<rbrakk>\<^sub>N * 2 ^ length bs) + int \<lbrakk> bs \<rbrakk>) = 
+                  - int (\<lbrakk> a \<rbrakk>\<^sub>N * 2 ^ length as) - int (\<lbrakk> b \<rbrakk>\<^sub>N * 2 ^ length as) + int (\<lbrakk> snd (DA\<^sup>+ as bs) \<rbrakk>\<^sub>N) * 2 ^ length as + int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk>"
+                  apply(subst subst3)
+                apply(subst Nat_Transfer.transfer_int_nat_functions(1))
+                apply(subst one, simp add: len_eq)
+                unfolding uplus_def DAplus.simps
+                  apply simp
+                  apply (subst DAplus_eq_len, simp add: len_eq)+
+                by (simp add: len_eq to_from_mod_id)
+              
+              (*then have hyps: "- (2 ^ length as) \<le> - int (\<lbrakk> a \<rbrakk>\<^sub>N * 2 ^ length as) - int (\<lbrakk> b \<rbrakk>\<^sub>N * 2 ^ length as) + int (\<lbrakk> snd (DA\<^sup>+ as bs) \<rbrakk>\<^sub>N) * 2 ^ length as + int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk>" 
+                "- int (\<lbrakk> a \<rbrakk>\<^sub>N * 2 ^ length as) - int (\<lbrakk> b \<rbrakk>\<^sub>N * 2 ^ length as) + int (\<lbrakk> snd (DA\<^sup>+ as bs) \<rbrakk>\<^sub>N) * 2 ^ length as + int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk> \<le> 2 ^ length as - 1"
+                using 3 unfolding 1 k_def seval.simps by simp_all
+
+              have hyps2: "0 \<le> int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk>" "int \<lbrakk> fst (DA\<^sup>+ as bs) \<rbrakk> \<le> 2 ^ length as - 1" 
+                 apply simp
+                apply(rule nat_0_le[THEN subst])
+                 apply simp
+                apply (subst Nat_Transfer.transfer_int_nat_relations(3))
+                  apply(rule order_class.order.trans)
+                    apply(rule ueval_range, simp_all)
+                  apply(subst DAplus_eq_len, simp add: len_eq)
+                  apply(subst len_eq)
+                proof -
+                  have f1: "Suc (nat (- 1 + 2 ^ length bs)) = nat (2 ^ length bs)"
+                    by (simp add: Suc_nat_eq_nat_zadd1)
+                  have "(0::int) \<le> 2"
+                    by auto
+                  then have "Suc (nat (- 1 + 2 ^ length bs)) = 2 ^ length bs"
+                    using f1 nat_2 nat_power_eq numeral_2_eq_2 by presburger
+                  then show "2 ^ length bs - Suc 0 \<le> nat (2 ^ length bs - 1)"
+                    by linarith
+                qed
+                  *)
+              show ?case unfolding 1 DAminus.simps prod.sel ueval.simps seval.simps
+                apply(subst subst3)
+                apply(subst Nat_Transfer.transfer_int_nat_functions(1))
+                apply(subst one, simp add: len_eq)
+                unfolding uplus_def DAplus.simps
+                apply simp
+                apply (subst DAplus_eq_len, simp add: len_eq)+
+                apply (cases a ; cases b; cases "snd (DA\<^sup>+ as bs)") apply (simp_all add:len_eq)
+                using hyps hyps2 by simp+
+            qed
+            then show ?case sorry
+          qed
     qed
 
 end
