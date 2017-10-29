@@ -2,3 +2,4 @@
 *.agda#
 *.agda~
 *.thy~
+.DS_Store
