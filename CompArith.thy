@@ -716,7 +716,7 @@ qed
 (* Theorem 2.10 *)
 (* 3 \<longleftrightarrow> 5 : done *)
 (* 4 \<longleftrightarrow> 3 : done *)
-(* 2 \<longrightarrow> 4 : - *)
+(* 2 \<longrightarrow> 4 : done *)
 (* 4 \<longrightarrow> 1 : done *)
 (* 1 \<longrightarrow> 2 : done *)
 
@@ -754,7 +754,75 @@ lemma thm_2_10_2_impl_4 :
   assumes "length as = length bs"
   defines "k \<equiv> length as"
   shows "(- (2 ^ k) \<le> int \<lbrakk>a#as\<rbrakk> - int \<lbrakk>b#bs\<rbrakk> \<and> int \<lbrakk>a#as\<rbrakk> - int \<lbrakk>b#bs\<rbrakk> \<le> 2 ^ k - 1) \<Longrightarrow> snd (DA\<^sup>- (a#as) (b#bs)) \<noteq> hd (fst (DA\<^sup>- (a#as) (b#bs)))"
-  sorry
+  apply rule
+proof goal_cases
+  case 1
+  have 2: "- (2 ^ k) \<le> \<lparr> (a # as) -\<^sub>U (b # bs) \<rparr> \<and> \<lparr> (a # as) -\<^sub>U (b # bs) \<rparr> \<le> 2 ^ k - 1"
+    apply rule
+    apply(subst two[symmetric])
+    using assms apply simp
+    using 1 apply simp
+    apply(subst two[symmetric])
+    using assms apply simp
+    using 1 by simp
+
+  have "\<lparr> fst (DA\<^sup>- (False # a # as) (False # b # bs)) \<rparr> = \<lparr> (\<not> snd (DA\<^sup>- (a # as) (b # bs))) # fst (DA\<^sup>- (a # as) (b # bs)) \<rparr>"
+    apply (subst DAminus.simps)
+    unfolding prod.sel bool2nat.simps
+    apply (cases "snd (DA\<^sup>- (a # as) (b # bs))")
+    by simp_all
+  with 2 have 3: "- (2 ^ k) \<le>  \<lparr> (\<not> snd (DA\<^sup>- (a # as) (b # bs))) # hd (fst (DA\<^sup>- (a # as) (b # bs))) # tl (fst (DA\<^sup>- (a # as) (b # bs))) \<rparr> \<and> 
+                  \<lparr> (\<not> snd (DA\<^sup>- (a # as) (b # bs))) # hd (fst (DA\<^sup>- (a # as) (b # bs))) # tl (fst (DA\<^sup>- (a # as) (b # bs))) \<rparr> \<le> 2 ^ k - 1" 
+    unfolding uminus_def DAminus.simps prod.sel list.sel by simp
+  show ?case proof (cases "snd (DA\<^sup>- (a # as) (b # bs))")
+    case False
+    then have false: "snd (DA\<^sup>- (a # as) (b # bs)) = False" by simp
+    have "\<lparr> (\<not> snd (DA\<^sup>- (a # as) (b # bs))) # hd (fst (DA\<^sup>- (a # as) (b # bs))) # tl (fst (DA\<^sup>- (a # as) (b # bs))) \<rparr> \<le> - (2 ^ (k+1)) + (2 ^ k - 1)" 
+      unfolding 1(2)[symmetric] seval.simps ueval.simps
+      apply(rule add_mono)
+      unfolding k_def list.size(4) length_tl 
+       apply(subst DAminus_eq_len)
+      using assms apply simp
+      unfolding list.size(4) assms[symmetric] Nat_Transfer.transfer_int_nat_functions(2)[symmetric] 
+      using False apply simp
+      apply(subst DAminus_eq_len)
+      using assms apply simp
+      unfolding false bool2nat.simps mult_zero_class.mult_zero_left add_0 
+      apply simp
+      unfolding k_def using ueval_upper_bound3 DAminus_eq_len assms
+      by (metis less_imp_of_nat_less of_nat_power transfer_int_nat_numerals(3))
+
+     (*   apply (subst(4) nat_0_le[symmetric])
+       apply simp
+      unfolding transfer_int_nat_relations(3) 
+      apply(subst nat_diff_distrib')
+        apply (simp,simp)
+      unfolding nat_one_as_int[symmetric] 
+      apply(subst nat_power_eq)
+       apply simp
+      unfolding transfer_nat_int_numerals(3)[symmetric]
+      thm ueval_upper_bound2
+      apply(rule ueval_upper_bound2)
+      unfolding k_def using DAminus_eq_len assms by simp*)
+
+      with 3 have contr1: "- (2 ^ k) \<le> - (2 ^ (k+1)) + (2 ^ k - (1 :: int))" by simp
+      have contr2: "- (2 ^ (k+1)) + (2 ^ k - (1 :: int)) < - (2 ^ k)" by simp
+
+      show ?thesis using contr1 contr2 by simp
+
+  next
+    case True
+    then have true: "snd (DA\<^sup>- (a # as) (b # bs)) = True" by simp
+    have "2 ^ k \<le> \<lparr> (\<not> snd (DA\<^sup>- (a # as) (b # bs))) # hd (fst (DA\<^sup>- (a # as) (b # bs))) # tl (fst (DA\<^sup>- (a # as) (b # bs))) \<rparr>"
+      unfolding 1(2)[symmetric] seval.simps ueval.simps true not_True_eq_False bool2nat.simps mult_zero_left transfer_int_nat_numerals(1)[symmetric] 
+        minus_zero add_0 length_tl
+      apply(subst DAminus_eq_len)
+      using assms apply simp
+      unfolding list.size(4) k_def assms by simp
+    with 3 have"2 ^ k \<le> 2 ^ k - (1 :: int)" by simp
+    then show ?thesis by simp
+  qed
+qed
 
 lemma thm_2_10_4_impl_1 : 
   fixes a b :: "bool" and as bs :: "bool list"
