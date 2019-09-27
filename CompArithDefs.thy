@@ -96,11 +96,11 @@ lemma seval_upper_bound: "\<lparr> (x#xs) \<rparr> \<le> 2 ^ (length xs) - 1"
   unfolding seval.simps
   apply (cases x)
   apply simp_all
-  apply(subst(3) nat_0_le[symmetric], simp)
-  apply(subst transfer_int_nat_relations(2), subst nat_mult_distrib, simp_all, subst nat_power_eq, simp_all)
-  using ueval_upper_bound3 apply (meson le_less le_less_trans one_less_numeral_iff power_less_power_Suc semiring_norm(76))
-  apply(subst(3) nat_0_le[symmetric], simp, subst transfer_int_nat_relations(2), subst nat_power_eq, simp_all)
-  using ueval_upper_bound3 by simp
+   apply(subst(3) nat_0_le[symmetric], simp)
+   apply(subst of_nat_less_iff, subst nat_mult_distrib, simp_all, subst nat_power_eq, simp_all)
+  apply (meson less_trans one_less_numeral_iff power_less_power_Suc semiring_norm(76) ueval_upper_bound3)
+  by (simp add: ueval_upper_bound3)
+ 
 
 lemma seval_lower_bound: "-(2 ^ (length xs)) \<le> \<lparr> (x#xs) \<rparr>"
  unfolding seval.simps
