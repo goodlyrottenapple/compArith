@@ -39,26 +39,26 @@ fun DAminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list \<time
 
 
 
-definition uplus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "+\<^sub>U" 90) where
-"as +\<^sub>U bs = fst (DA\<^sup>+ (False # as) (False # bs))"
+definition uplus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "+\<^sub>Z\<^sub>A" 90) where
+"as +\<^sub>Z\<^sub>A bs = fst (DA\<^sup>+ (False # as) (False # bs))"
 
-fun splus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "+\<^sub>S" 90) where
-"[] +\<^sub>S [] = []" |
-"as +\<^sub>S bs = fst (DA\<^sup>+ (hd as # as) (hd bs # bs))"
+fun splus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "+\<^sub>S\<^sub>A" 90) where
+"[] +\<^sub>S\<^sub>A [] = []" |
+"as +\<^sub>S\<^sub>A bs = fst (DA\<^sup>+ (hd as # as) (hd bs # bs))"
 
-definition tplus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "\<oplus>" 90) where
-"as \<oplus> bs = fst (DA\<^sup>+ as bs)"
+definition tplus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "+\<^sub>A" 90) where
+"as +\<^sub>A bs = fst (DA\<^sup>+ as bs)"
 
 
-definition uminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "-\<^sub>U" 90) where
-"as -\<^sub>U bs = fst (DA\<^sup>- (False # as) (False # bs))"
+definition uminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "-\<^sub>Z\<^sub>A" 90) where
+"as -\<^sub>Z\<^sub>A bs = fst (DA\<^sup>- (False # as) (False # bs))"
 
-fun sminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "-\<^sub>S" 90) where
-"[] -\<^sub>S [] = []" | 
-"as -\<^sub>S bs = fst (DA\<^sup>- (hd as # as) (hd bs # bs))"
+fun sminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "-\<^sub>S\<^sub>A" 90) where
+"[] -\<^sub>S\<^sub>A [] = []" | 
+"as -\<^sub>S\<^sub>A bs = fst (DA\<^sup>- (hd as # as) (hd bs # bs))"
 
-definition tminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "\<ominus>" 90) where
-"as \<ominus> bs = fst (DA\<^sup>- as bs)"
+definition tminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "-\<^sub>A" 90) where
+"as -\<^sub>A bs = fst (DA\<^sup>- as bs)"
 
 
 fun ueval :: "bool list \<Rightarrow> nat" ("\<lbrakk> _ \<rbrakk>") where
@@ -180,5 +180,29 @@ lemma bot_unfold[simp]: "\<bottom> = False" unfolding bot_def by simp
 definition top ("\<top>") where "top = True" 
 lemma top_unfold[simp]: "\<top> = True" unfolding top_def by simp
 
-  
+lemma nat_transfer: "\<And>x y. (int x) + (int y) = int (x + y)" by simp
+lemma nat_transfer2: "(int x) * (int y) = int (x * y)" by simp
+
+
+fun compl :: "bool list \<Rightarrow> bool list" where
+"compl [] = []" |
+"compl (True#xs) = False # compl xs" |
+"compl (False#xs) = True # compl xs"
+
+fun one_list :: "bool list \<Rightarrow> bool list" ("\<zero>\<^sup>\<rightarrow>\<one>") where
+"\<zero>\<^sup>\<rightarrow>\<one> [] = []" |
+"\<zero>\<^sup>\<rightarrow>\<one> [_] = [True]" |
+"\<zero>\<^sup>\<rightarrow>\<one> (_#xs) = False # \<zero>\<^sup>\<rightarrow>\<one> xs"
+
+fun zero :: "nat \<Rightarrow> bool list" ("\<zero>") where
+"\<zero> 0 = []" |
+"\<zero> (Suc n) = False # \<zero> n"
+
+fun one :: "nat \<Rightarrow> bool list" ("\<one>") where
+"\<one> 0 = []" |
+"\<one> (Suc n) = True # \<one> n"
+
+definition neg ("\<not>\<^sub>A") where "\<not>\<^sub>A x = (compl x) +\<^sub>A (\<zero>\<^sup>\<rightarrow>\<one> x)" 
+definition sneg ("\<not>\<^sub>S\<^sub>A") where "\<not>\<^sub>S\<^sub>A x = (compl x) +\<^sub>S\<^sub>A (\<zero>\<^sup>\<rightarrow>\<one> x)"
+
 end
