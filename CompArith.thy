@@ -42,8 +42,8 @@ apply (induct x y rule: List.list_induct2)
    apply simp 
   apply(case_tac x; case_tac y, simp_all)
   using lemma_1_4_1 apply (metis Nitpick.size_list_simp(2))
-   apply (smt eval_eq_seval of_nat_less_0_iff seval_upper_bound)
-  apply (smt eval_eq_seval of_nat_less_0_iff seval_upper_bound)
+  apply (metis diff_gt_0_iff_gt less_imp_of_nat_less minus_diff_eq not_int_zless_negative of_nat_less_numeral_power_cancel_iff pos_int_cases ueval_upper_bound3)
+  apply (metis of_nat_less_0_iff less_iff_diff_less_0 numeral_power_eq_of_nat_cancel_iff of_nat_less_iff ueval_upper_bound3)
   by (metis Nitpick.size_list_simp(2) lemma_1_4_1)
 
 (* Lemma 2.1 *)
@@ -900,7 +900,7 @@ qed
 
 
 
-lemma thm_3_5_2_impl_4 : 
+(*lemma thm_3_5_2_impl_4 : 
   fixes a b :: "bool" and as bs :: "bool list"
   assumes "length as = length bs"
   defines "k \<equiv> length as"
@@ -911,29 +911,15 @@ proof goal_cases
   show ?case 
     apply (cases a; cases b; cases "snd (DA\<^sup>- (a # as) (b # bs))"; cases "snd (DA\<^sup>- as bs)", simp_all)
       sorry
-qed
+qed*)
 
-
-lemma thm_3_5_4_impl_1 : 
-  fixes a b :: "bool" and as bs :: "bool list"
-  assumes "length as = length bs"
-  defines "k \<equiv> length as"
-  shows "snd (DA\<^sup>- (a#as) (b#bs)) = snd (DA\<^sup>- as bs) \<Longrightarrow> \<lparr>a#as\<rparr> - \<lparr>b#bs\<rparr> = \<lparr>(a#as) -\<^sub>A (b#bs)\<rparr>"
-proof goal_cases
-  case 1
-  then show ?case 
-    apply(subst thm_3_1_4)
-    using assms apply simp
-    unfolding sminus.simps tminus_def seval.simps DAminus.simps prod.sel
-    by simp
-qed 
   
 
-lemma thm_3_5_1_iff_2:
+lemma thm_3_5_1_impl_2:
   fixes k :: nat
   assumes "length a = Suc k"
   shows "length a = length b \<Longrightarrow> 
-    \<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>a -\<^sub>A b\<rparr> \<longleftrightarrow> (- (2 ^ k) \<le> \<lparr>a\<rparr> - \<lparr>b\<rparr> \<and> \<lparr>a\<rparr> - \<lparr>b\<rparr> \<le> 2 ^ k - 1)"
+    \<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>a -\<^sub>A b\<rparr> \<Longrightarrow> (- (2 ^ k) \<le> \<lparr>a\<rparr> - \<lparr>b\<rparr> \<and> \<lparr>a\<rparr> - \<lparr>b\<rparr> \<le> 2 ^ k - 1)"
   apply rule+
     proof goal_cases
       case 1
@@ -981,12 +967,16 @@ lemma thm_3_5_1_iff_2:
                apply simp_all
         sorry
         (*by (rule 4 , simp, subst DAminus_eq_len, simp, simp)+  *)        
-    next
-      case 3
-      have subst1: "\<And> a b. length a = length b \<Longrightarrow> 0 \<le> \<lbrakk> a \<rbrakk> + \<lbrakk> b \<rbrakk> \<and> \<lbrakk> a \<rbrakk> + \<lbrakk> b \<rbrakk> \<le> 2 ^ length a - 1 \<Longrightarrow> \<lbrakk> fst (DA\<^sup>+ a b) \<rbrakk> = \<lbrakk> a \<rbrakk> + \<lbrakk> b \<rbrakk>" 
-        using thm_2_9_1_iff_2 unfolding tplus_def by fastforce
-      show ?case sorry
 qed
+
+
+lemma thm_3_5_3_impl_1 : 
+  fixes a b :: "bool" and as bs :: "bool list"
+  assumes "length as = length bs"
+  defines "triple' x y z \<equiv> triple x y z (a#as) (b#bs) ((a#as) -\<^sub>A (b#bs))"
+
+  shows "(triple' \<top> \<bottom> \<top> \<or> triple' \<bottom> \<top> \<bottom> \<or> triple' \<bottom> \<bottom> \<top>  \<or> triple' \<bottom> \<bottom> \<bottom> \<or> triple' \<top> \<top> \<bottom> \<or> triple' \<top> \<top> \<top>) \<Longrightarrow> \<lparr>a#as\<rparr> - \<lparr>b#bs\<rparr> = \<lparr>(a#as) -\<^sub>A (b#bs)\<rparr>"
+  sorry
 
 lemma length_comp: "length (compl a) = length a"
   apply(induct a) 
@@ -1043,6 +1033,16 @@ lemma thm_3_6_1_aux: "\<lbrakk> a \<rbrakk> + \<lbrakk> compl a \<rbrakk> = 2 ^ 
   apply (case_tac a1)
   by (simp add: length_comp)+
 
+
+lemma thm_3_6_1_aux1a: "(int (a + b) + 1 = 2 ^ c) = (a + b + 1 = 2 ^ c)"
+    by (metis int_ops(2) int_ops(5) real_of_nat_eq_numeral_power_cancel_iff)
+
+lemma thm_3_6_1_aux1b: "(int a + (int b - 2 ^ c) = - 1) = (a + b + 1 = 2 ^ c)"
+  using thm_3_6_1_aux1a by force
+
+lemma thm_3_6_1_aux1c: "(int a - 2 ^ c + int b = - 1) = (a + b + 1 = 2 ^ c)"
+  using thm_3_6_1_aux1a by force
+
 lemma thm_3_6_1_aux2:
   fixes k :: nat
   assumes "length a = Suc (Suc k)"
@@ -1050,12 +1050,11 @@ lemma thm_3_6_1_aux2:
   apply (cases a)
   using assms apply simp
   apply (case_tac aa)
-   apply simp
-  using thm_3_6_1_aux 
-  apply (smt One_nat_def numeral_2_eq_2 of_nat_Suc of_nat_add of_nat_diff of_nat_power one_le_numeral one_le_power plus_1_eq_Suc)
-  apply simp
-  using thm_3_6_1_aux length_comp 
-  by (smt numeral_plus_numeral numeral_plus_one of_nat_add of_nat_diff of_nat_numeral of_nat_power one_le_numeral one_le_power semiring_norm(2))
+   apply simp_all
+  apply (subst thm_3_6_1_aux1b)
+  using thm_3_6_1_aux apply (simp add: add.commute)
+  apply (subst thm_3_6_1_aux1c)
+  using thm_3_6_1_aux length_comp by (simp add: add.commute)
 
 lemma thm_3_6_1: 
   fixes k :: nat
@@ -1125,19 +1124,41 @@ apply(subst one_seval)
 proof goal_cases
   case 1
   note top = 1
+  have a: "\<And>list. - (2 * 2 ^ k) - 1 \<le> int \<lbrakk> compl list \<rbrakk>" 
+  proof -
+    fix list :: "bool list"
+    have "- 1 + - int (Suc 1 * Suc 1 ^ k) \<le> int \<lbrakk> compl list \<rbrakk>"
+      by linarith
+    then show "- (2 * 2 ^ k) - 1 \<le> int \<lbrakk> compl list \<rbrakk>"
+      by simp
+  qed
+
   have "- (2 ^ Suc k) - 1 \<le> \<lparr> compl a \<rparr>"
        "\<lparr> compl a \<rparr> \<le> 2 ^ Suc k - 2"
-    apply (smt Nitpick.size_list_simp(2) add_diff_cancel_left' assms length_comp list.sel(3) nat.simps(3) plus_1_eq_Suc seval.elims seval_lower_bound)
+     apply(cases a)
+    using assms apply auto[1]
+     apply simp
+     apply(case_tac aa)
+     apply simp
+    using a apply simp
+    using assms length_comp apply auto[1]
     apply(cases a)
     using assms apply simp
     apply (case_tac aa, simp_all) defer
-    apply (smt One_nat_def numeral_2_eq_2 of_nat_1 of_nat_Suc of_nat_less_numeral_power_cancel_iff of_nat_numeral one_le_power ueval_upper_bound3)
+    using eval_eq_seval one_le_power seval_upper_bound apply smt
     
     apply (case_tac "int \<lbrakk> compl list \<rbrakk> < 2 * 2 ^ k - 1")
      apply simp_all
     proof goal_cases
       case (1 _ list)
-      then have a: "int \<lbrakk> compl list \<rbrakk> \<ge> 2 * 2 ^ k - 1" by simp
+      then have "int \<lbrakk> compl list \<rbrakk> \<ge> 2 * 2 ^ k - 1" by simp
+      then have a: "\<lbrakk> compl list \<rbrakk> \<ge> 2 * 2 ^ k - 1" 
+      proof -
+        have "int (2 * 2 ^ k - 1) \<le> int \<lbrakk> compl list \<rbrakk>"
+          by (metis (no_types) \<open>2 * 2 ^ k - 1 \<le> int \<lbrakk> compl list \<rbrakk>\<close> of_nat_1 of_nat_diff one_le_numeral one_le_power push_bit_of_1 push_bit_of_nat semiring_normalization_rules(27))
+        then show ?thesis
+          by simp
+      qed
 
       have b: "\<And>l. \<lbrakk> \<one> l \<rbrakk> = 2 ^ l - 1" 
         apply(induct_tac l)
@@ -1148,8 +1169,7 @@ proof goal_cases
 
       have "\<lbrakk> compl list \<rbrakk> \<le> 2 * 2 ^ k - 1" using ueval_upper_bound
         by (metis "1"(1) assms diff_Suc_1 length_Cons length_comp power_commuting_commutes semiring_normalization_rules(28))
-      with a have "\<lbrakk> compl list \<rbrakk> = 2 * 2 ^ k - 1"
-        by (smt One_nat_def le_neq_trans less_imp_of_nat_less mult_2 of_nat_1 of_nat_add of_nat_diff one_le_mult_iff one_le_numeral one_le_power push_bit_of_1 push_bit_of_nat)
+      with a have "\<lbrakk> compl list \<rbrakk> = 2 * 2 ^ k - 1" by simp
       then have d: "\<lbrakk> compl list \<rbrakk> = 2 ^ (Suc k) - 1" by simp
         
       have "compl list = \<one> (Suc k)" 
