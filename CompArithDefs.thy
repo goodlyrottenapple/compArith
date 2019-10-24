@@ -206,53 +206,42 @@ definition neg ("\<not>\<^sub>A") where "\<not>\<^sub>A x = (compl x) +\<^sub>A 
 definition sneg ("\<not>\<^sub>S\<^sub>A") where "\<not>\<^sub>S\<^sub>A x = (compl x) +\<^sub>S\<^sub>A (\<zero>\<^sup>\<rightarrow>\<one> x)"
 
 
-(*
-fun DA :: "bool \<Rightarrow> bool list \<Rightarrow> bool list \<Rightarrow> bool list \<times> bool" where
-"DA c [] [] = ([] , c)" |
-"DA _ (_ # _) [] = undefined" |
-"DA _ [] (_ # _) = undefined" |
-"DA c (a # as) (b # bs) = 
-  ( \<lbrakk>(\<lbrakk>a\<rbrakk>\<^sub>N + \<lbrakk>b\<rbrakk>\<^sub>N + \<lbrakk>snd (DA c as bs)\<rbrakk>\<^sub>N) mod 2\<rbrakk>\<^sub>B # fst (DA c as bs) , 
-    \<lbrakk>(\<lbrakk>a\<rbrakk>\<^sub>N + \<lbrakk>b\<rbrakk>\<^sub>N + \<lbrakk>snd (DA c as bs)\<rbrakk>\<^sub>N) div 2\<rbrakk>\<^sub>B )"
 
-lemma DA_plus_DA_def:
-  "length as = length bs \<Longrightarrow> DA\<^sup>+ as bs = DA \<bottom> as bs"
-apply (induct as bs rule: List.list_induct2)
-  unfolding DAplus.simps DA.simps
-  by simp_all
-
-
-lemma DA_minus_DA_def: 
-  "length as = length bs \<Longrightarrow> DA\<^sup>- as bs = DA \<top> as (compl bs)"
-apply (induct as bs rule: List.list_induct2)
-  unfolding DAminus.simps DA.simps
-  by simp_all
+lemma length_comp_one: "length (compl a) = length (\<zero>\<^sup>\<rightarrow>\<one> a)"
+  by(induct a, simp, case_tac a2, simp_all)
+ 
+lemma length_sneg : 
+  fixes k :: nat
+  assumes "length a = Suc k"
+  shows "Suc (length a) = length (\<not>\<^sub>S\<^sub>A a)"
+  unfolding sneg_def
+  using assms apply(induct a arbitrary: k)
+   apply simp_all
+  apply(case_tac a2; case_tac a1)
+     apply simp_all unfolding splus.simps
+  using DAplus_eq_len length_comp_one by auto
+  
 
 
+lemma length_sminus: 
+  fixes a b :: "bool list"
+  assumes "length a = Suc k"
+ shows "length a = length b \<Longrightarrow> length (a -\<^sub>S\<^sub>A b) = Suc (length b)"
+  apply (cases a; cases b)
+  using assms apply simp
+    apply (simp add:assms)+
+using DAminus_eq_len by simp
 
-
-lemma DA_minus_DA_def_aux: 
-  "length as = Suc (Suc k) \<Longrightarrow> DA \<bottom> as (\<zero>\<^sup>\<rightarrow>\<one> as) = DA \<top> as (\<zero>\<^sup>\<rightarrow> (Suc (Suc k)))"
-  apply (induct as arbitrary: k)
-   apply simp
-  apply (case_tac as)
+lemma one_seval: 
+  fixes k :: nat
+  assumes "length a = Suc (Suc k)"
+  shows "\<lparr> \<zero>\<^sup>\<rightarrow>\<one> a \<rparr> = 1"
+  using assms apply (induct a arbitrary: k) 
   apply simp
-  apply simp
-  sorry
+  apply (case_tac a2)
+   apply simp+
+  apply (case_tac list)
+  by auto
 
 
-lemma DA_minus_DA_def: 
-  "length as = length bs \<Longrightarrow> length as = Suc (Suc k) \<Longrightarrow> fst (DA \<bottom> as (fst (DA \<bottom> bs (\<zero>\<^sup>\<rightarrow>\<one> as)))) = fst (DA \<top> as bs)"
-  apply (induct as bs arbitrary: k rule: List.list_induct2 )
-   apply simp
-  unfolding one_list.simps DA.simps fst_conv
-  find_theorems "fst (?a,?b) = ?a"
-  apply (case_tac xs; case_tac ys, simp_all)
-  apply rule
-   defer
-   apply (case_tac list; case_tac lista, simp_all)
-  apply (case_tac a; case_tac aa, simp_all)
-  apply auto[1]
-   defer
-*)
 end

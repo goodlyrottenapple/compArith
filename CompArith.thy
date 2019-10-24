@@ -3,7 +3,6 @@ imports Main CompArithDefs (*"~~/src/HOL/Library/Numeral_Type"*)
 
 begin
     
-    
 (* Lemma 1.2 *)
     
 lemma lemma_1_2 : 
@@ -725,6 +724,153 @@ lemma thm_3_4_2_impl_1:
   using thm_3_4_1_iff_2 assms by blast
 
 
+
+(* Theorem 3.4 Condition Set 2 *)
+(* 3 \<longleftrightarrow> 5 : done *)
+(* 4 \<longleftrightarrow> 3 : done *)
+(* 1 \<longrightarrow> 2 : done *)
+(* 2 \<longrightarrow> 3 : done\<^sup>\<dagger> *)
+(* 3 \<longrightarrow> 1 : done\<^sup>\<dagger> *)
+
+lemma thm_3_4_cs2_3_iff_5 :
+  fixes ak bk :: bool and as bs :: "bool list"
+  assumes "length (ak # as) = length (bk # bs)"
+  defines "triple' x y z \<equiv> triple x y z (ak # as) (bk # bs) ((ak # as) +\<^sub>A (bk # bs))" and
+          "rk \<equiv> hd ((ak # as) +\<^sub>A (bk # bs))"
+  shows "-(\<lbrakk>ak\<rbrakk>\<^sub>Z) - \<lbrakk>bk\<rbrakk>\<^sub>Z + \<lbrakk>rk\<rbrakk>\<^sub>Z = -2  \<longleftrightarrow> triple' \<top> \<top> \<bottom>"
+  apply rule
+  unfolding triple'_def triple_def rk_def[symmetric] list.sel(1)
+  by(cases ak; cases bk; cases rk, simp_all)+
+
+
+
+lemma thm_3_4_cs2_4_iff_3 :
+  fixes a b :: "bool" and as bs :: "bool list"
+  assumes "length as = length bs"
+  defines "triple' x y z \<equiv> triple x y z (a#as) (b#bs) ((a#as) +\<^sub>A (b#bs))"
+  shows "(snd (DA\<^sup>+ (a#as) (b#bs)) = \<top> \<and> snd (DA\<^sup>+ as bs) = \<bottom>) \<longleftrightarrow> triple' \<top> \<top> \<bottom>"
+  unfolding triple'_def triple_def
+proof(rule , goal_cases)
+  case 1
+  then show ?case
+    unfolding tplus_def
+    by (cases a;cases b; cases "snd (DA\<^sup>+ as bs)", simp_all)
+next
+  case 2
+  then show ?case unfolding tplus_def
+    by (cases a;cases b; cases "snd (DA\<^sup>+ as bs)", simp_all)
+qed
+
+
+
+lemma thm_3_4_cs2_1_impl_2:
+  fixes k :: nat
+  assumes "length a = Suc k"
+  shows "length a = length b \<Longrightarrow> 
+    (\<lparr>a\<rparr> + \<lparr>b\<rparr> = \<lparr>\<top>#(a +\<^sub>A b)\<rparr> \<and> hd (a +\<^sub>A b) = \<bottom>) \<Longrightarrow> - (2 ^ (Suc k)) \<le> \<lparr>a\<rparr> + \<lparr>b\<rparr> \<and> \<lparr>a\<rparr> + \<lparr>b\<rparr> \<le> - (2 ^ k) - 1"
+  apply rule+
+    proof goal_cases
+      case 1
+      then have "\<lparr>a\<rparr> + \<lparr>b\<rparr> = - int (2 ^ (Suc k)) + int \<lbrakk> a +\<^sub>A b \<rbrakk>" unfolding seval.simps
+        using DAplus_eq_len assms tplus_def by auto
+      then show ?case by simp
+    next
+      case 2
+      then have 1: "\<lparr>a\<rparr> + \<lparr>b\<rparr> = - int (2 ^ (Suc k)) + int \<lbrakk> a +\<^sub>A b \<rbrakk>" unfolding seval.simps
+        using DAplus_eq_len assms tplus_def by auto
+
+      show ?case unfolding 1
+        apply simp
+        using assms 2 apply (cases "a +\<^sub>A b") apply simp_all
+        using ueval_upper_bound3
+        by (metis DAplus_eq_len add_diff_cancel_left' length_Cons plus_1_eq_Suc tplus_def)
+         
+    qed
+
+
+lemma thm_3_4_cs2_2_impl_3:
+  fixes k :: nat and a b :: bool and as bs :: "bool list"
+  assumes "length as = k"
+  defines "triple' x y z \<equiv> triple x y z (a#as) (b#bs) ((a#as) +\<^sub>A (b#bs))"
+  shows "length as = length bs \<Longrightarrow> 
+    - (2 ^ (Suc k)) \<le> \<lparr>a#as\<rparr> + \<lparr>b#bs\<rparr> \<and> \<lparr>a#as\<rparr> + \<lparr>b#bs\<rparr> \<le> - (2 ^ k) - 1 \<Longrightarrow> triple' \<top> \<top> \<bottom>"
+proof goal_cases
+  case 1
+   have 2: "- (2 ^ (Suc k)) \<le> \<lparr> (a#as) +\<^sub>S\<^sub>A (b#bs) \<rparr> \<and> \<lparr> (a#as) +\<^sub>S\<^sub>A (b#bs) \<rparr> \<le> - (2 ^ k) - 1"
+    apply rule
+    apply(subst thm_3_1_3[symmetric])
+    using 1 apply (simp,simp)
+    apply(subst thm_3_1_3[symmetric])
+    using 1 by simp_all
+
+  define sig_r ("\<sigma>\<^sub>r") where "\<sigma>\<^sub>r \<equiv> \<lbrakk> (\<lbrakk> a \<rbrakk>\<^sub>N + \<lbrakk> b \<rbrakk>\<^sub>N + \<lbrakk> snd (DA\<^sup>+ as bs) \<rbrakk>\<^sub>N) mod 2 \<rbrakk>\<^sub>B"
+  define r_k_minus_one ("r\<^sup>k\<^sup>-\<^sup>1") where "r\<^sup>k\<^sup>-\<^sup>1 \<equiv> fst (DA\<^sup>+ as bs)"
+  define R  where "R \<equiv> \<lbrakk> (\<lbrakk> a \<rbrakk>\<^sub>N + \<lbrakk> b \<rbrakk>\<^sub>N + \<lbrakk> snd (\<sigma>\<^sub>r # r\<^sup>k\<^sup>-\<^sup>1, \<lbrakk> (\<lbrakk> a \<rbrakk>\<^sub>N + \<lbrakk> b \<rbrakk>\<^sub>N + \<lbrakk> snd (DA\<^sup>+ as bs) \<rbrakk>\<^sub>N) div 2 \<rbrakk>\<^sub>B) \<rbrakk>\<^sub>N) mod 2 \<rbrakk>\<^sub>B"
+
+  from 2 have 3: 
+    "- (2 ^ (Suc k)) \<le> - int (\<lbrakk> R \<rbrakk>\<^sub>N) * (2 ^ (Suc k)) + int ((\<lbrakk>\<sigma>\<^sub>r\<rbrakk>\<^sub>N) * (2 ^ k) + \<lbrakk> r\<^sup>k\<^sup>-\<^sup>1 \<rbrakk>)"
+    "- int (\<lbrakk> R \<rbrakk>\<^sub>N) * (2 ^ (Suc k)) + int ((\<lbrakk>\<sigma>\<^sub>r\<rbrakk>\<^sub>N) * (2 ^ k) + \<lbrakk> r\<^sup>k\<^sup>-\<^sup>1 \<rbrakk>) \<le> - (2 ^ k) - 1"
+    unfolding splus.simps list.sel(1) DAplus.simps fst_conv sig_r_def 
+        r_k_minus_one_def R_def seval.simps ueval.simps
+    using DAplus_eq_len assms(1) 1(1) by simp_all
+
+  from 3(2) have 4: "\<lbrakk> R \<rbrakk>\<^sub>N = 1"
+    by (smt One_nat_def add_diff_cancel_left' bool2nat.elims le_numeral_extra(4) mult_minus_left of_nat_diff of_nat_less_0_iff plus_1_eq_Suc zero_le_power)
+  then have 5: "R = \<top>" using bool2nat.elims by auto
+
+  from 3(2) 4 have "int ((\<lbrakk>\<sigma>\<^sub>r\<rbrakk>\<^sub>N) * (2 ^ k) + \<lbrakk> r\<^sup>k\<^sup>-\<^sup>1 \<rbrakk>) \<le> (2 ^ k) - 1" by simp
+  with 4 5 have "\<lbrakk>\<sigma>\<^sub>r\<rbrakk>\<^sub>N = 0"
+    by (smt bool2nat.simps(2) int_nat_eq mult.left_neutral nat_2 numeral_2_eq_2 of_nat_add of_nat_power_eq_of_nat_cancel_iff seval.simps(2) seval_lower_bound top_unfold)
+  then have 6: "\<sigma>\<^sub>r = \<bottom>" using bool2nat.elims by auto
+
+  with 5 have "\<top> = a \<and> \<top> = b \<and> \<bottom> = hd ((a#as) +\<^sub>A (b#bs))"
+    by (smt DAplus.simps(4) R_def add.right_neutral add_self_mod_2 bool2nat.simps(1) bool2nat.simps(2) bot_unfold fst_conv lem_2_1 list.sel(1) mult_2 nat.simps(3) one_div_two_eq_zero plus_1_eq_Suc sig_r_def snd_conv top_unfold tplus_def)
+  then show ?case unfolding triple'_def triple_def by auto
+qed
+
+
+lemma thm_3_4_cs2_3_impl_1:
+  fixes k :: nat and a b :: bool and as bs :: "bool list"
+  assumes "length as = k"
+  defines "triple' x y z \<equiv> triple x y z (a#as) (b#bs) ((a#as) +\<^sub>A (b#bs))"
+  shows "length as = length bs \<Longrightarrow> 
+   triple' \<top> \<top> \<bottom> \<Longrightarrow> (\<lparr>a#as\<rparr> + \<lparr>b#bs\<rparr> = \<lparr>\<top>#((a#as) +\<^sub>A (b#bs))\<rparr> \<and> hd ((a#as) +\<^sub>A (b#bs)) = \<bottom>)"
+proof goal_cases
+  case 1
+  then show ?case 
+    apply(subst thm_3_1_3)
+    using assms apply simp
+    unfolding splus.simps tplus_def seval.simps DAplus.simps prod.sel triple'_def triple_def list.sel(1)
+    by (smt One_nat_def add_numeral_left add_self_div_2 bot_unfold mod_add_self1 nat2bool.simps(2) not_mod2_eq_Suc_0_eq_0 numeral_2_eq_2 numeral_One one_mod_two_eq_one plus_1_eq_Suc semiring_norm(2) to_from_mod_id2 top_unfold)
+qed 
+
+
+lemma thm_3_4_cs2_2_impl_1:
+  fixes k :: nat
+  assumes "length a = Suc k"
+  shows "length a = length b \<Longrightarrow> 
+    - (2 ^ (Suc k)) \<le> \<lparr>a\<rparr> + \<lparr>b\<rparr> \<and> \<lparr>a\<rparr> + \<lparr>b\<rparr> \<le> - (2 ^ k) - 1 \<Longrightarrow> (\<lparr>a\<rparr> + \<lparr>b\<rparr> = \<lparr>\<top>#(a +\<^sub>A b)\<rparr> \<and> hd (a +\<^sub>A b) = \<bottom>)"
+  using assms
+  apply (cases a; cases b)
+  apply (simp, simp, simp) 
+proof goal_cases
+  case (1 a list aa lista)
+  show ?case unfolding 1
+    apply(rule thm_3_4_cs2_3_impl_1)
+    using 1 unfolding 1 apply (simp, simp)
+    apply(rule thm_3_4_cs2_2_impl_3)
+    using 1 unfolding 1 by simp+
+qed
+
+
+lemma thm_3_4_cs2_2_impl_1':
+  fixes k :: nat
+  assumes "length a = Suc k"
+  shows "length a = length b \<Longrightarrow> 
+    - (2 ^ (Suc k)) \<le> \<lparr>a\<rparr> + \<lparr>b\<rparr> \<and> \<lparr>a\<rparr> + \<lparr>b\<rparr> \<le> - (2 ^ k) - 1 \<Longrightarrow> \<lparr>a\<rparr> + \<lparr>b\<rparr> = \<lparr>\<top>#(a +\<^sub>A b)\<rparr>"
+  using thm_3_4_cs2_2_impl_1 assms by blast
+
+
 (* Theorem 3.5 *)
 (* 4 \<longleftrightarrow> 3 : done *)
 (* 3 \<longleftrightarrow> 5 : done *)
@@ -732,7 +878,6 @@ lemma thm_3_4_2_impl_1:
 (* 4 \<longrightarrow> 1 : done *)
 (* 1 \<longrightarrow> 2 : done\<^sup>\<dagger> *)
 
-(* \<^sup>\<dagger> uses smt calls for now *)
 
 lemma thm_3_5_3_iff_5 :
   fixes ak bk :: bool and as bs :: "bool list"
@@ -766,14 +911,12 @@ qed
 
 
 
-
-
 lemma thm_3_5_2_impl_4 : 
   fixes a b :: "bool" and as bs :: "bool list"
   assumes "length as = length bs"
   defines "k \<equiv> length as"
-  shows "(- (2 ^ k) \<le> \<lparr>a#as\<rparr> - \<lparr>b#bs\<rparr> \<and> \<lparr>a#as\<rparr> - \<lparr>b#bs\<rparr> \<le> 2 ^ k - 1) \<Longrightarrow> snd (DA\<^sup>- (a#as) (b#bs)) = snd (DA\<^sup>- as bs)"
-  
+  shows "(- (2 ^ k) \<le> \<lparr>a#as\<rparr> - \<lparr>b#bs\<rparr> \<and> \<lparr>a#as\<rparr> - \<lparr>b#bs\<rparr> \<le> 2 ^ k - 1) \<Longrightarrow> 
+          snd (DA\<^sup>- (a#as) (b#bs)) = snd (DA\<^sup>- as bs)"
 proof goal_cases
   case 1
   then have "- (2 ^ k) \<le> \<lparr> (a # as) -\<^sub>S\<^sub>A (b # bs) \<rparr> \<and> \<lparr> (a # as) -\<^sub>S\<^sub>A (b # bs) \<rparr> \<le> 2 ^ k - 1"
@@ -882,41 +1025,153 @@ qed
 
 
 
-lemma length_comp_one: "length (compl a) = length (\<zero>\<^sup>\<rightarrow>\<one> a)"
-  by(induct a, simp, case_tac a2, simp_all)
- 
-lemma length_sneg : 
+(* Theorem 3.5 Condition Set 2 *)
+(* 3 \<longleftrightarrow> 5 : done *)
+(* 4 \<longleftrightarrow> 3 : done *)
+(* 1 \<longrightarrow> 2 : done *)
+(* 2 \<longrightarrow> 3 : done\<^sup>\<dagger> *)
+(* 3 \<longrightarrow> 1 : done\<^sup>\<dagger> *)
+
+lemma thm_3_5_cs2_3_iff_5 :
+  fixes ak bk :: bool and as bs :: "bool list"
+  assumes "length (ak # as) = length (bk # bs)"
+  defines "triple' x y z \<equiv> triple x y z (ak # as) (bk # bs) ((ak # as) -\<^sub>A (bk # bs))" and
+          "rk \<equiv> hd ((ak # as) -\<^sub>A (bk # bs))"
+  shows "(\<lbrakk>ak\<rbrakk>\<^sub>Z) - \<lbrakk>bk\<rbrakk>\<^sub>Z - \<lbrakk>rk\<rbrakk>\<^sub>Z = 1  \<longleftrightarrow> triple' \<top> \<bottom> \<bottom>"
+  apply rule
+  unfolding triple'_def triple_def rk_def[symmetric] list.sel(1)
+  by(cases ak; cases bk; cases rk, simp_all)+
+
+
+
+lemma thm_3_5_cs2_4_iff_3 :
+  fixes a b :: "bool" and as bs :: "bool list"
+  assumes "length as = length bs"
+  defines "triple' x y z \<equiv> triple x y z (a#as) (b#bs) ((a#as) -\<^sub>A (b#bs))"
+  shows "(snd (DA\<^sup>- (a#as) (b#bs)) = \<top> \<and> snd (DA\<^sup>- as bs) = \<bottom>) \<longleftrightarrow> triple' \<top> \<bottom> \<bottom>"
+  unfolding triple'_def triple_def
+proof(rule , goal_cases)
+  case 1
+  then show ?case
+    unfolding tminus_def
+    by (cases a;cases b; cases "snd (DA\<^sup>- as bs)", simp_all)
+next
+  case 2
+  then show ?case unfolding tminus_def
+    by (cases a;cases b; cases "snd (DA\<^sup>- as bs)", simp_all)
+qed
+
+
+
+lemma thm_3_5_cs2_1_impl_2:
   fixes k :: nat
   assumes "length a = Suc k"
-  shows "Suc (length a) = length (\<not>\<^sub>S\<^sub>A a)"
-  unfolding sneg_def
-  using assms apply(induct a arbitrary: k)
-   apply simp_all
-  apply(case_tac a2; case_tac a1)
-     apply simp_all unfolding splus.simps
-  using DAplus_eq_len length_comp_one by auto
-  
+  shows "length a = length b \<Longrightarrow> 
+    (\<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>\<top>#(a -\<^sub>A b)\<rparr> \<and> hd (a -\<^sub>A b) = \<bottom>) \<Longrightarrow> - (2 ^ (Suc k)) \<le> \<lparr>a\<rparr> - \<lparr>b\<rparr> \<and> \<lparr>a\<rparr> - \<lparr>b\<rparr> \<le> - (2 ^ k) - 1"
+  apply rule+
+    proof goal_cases
+      case 1
+      then have "\<lparr>a\<rparr> - \<lparr>b\<rparr> = - int (2 ^ (Suc k)) + int \<lbrakk> a -\<^sub>A b \<rbrakk>" unfolding seval.simps
+        using DAminus_eq_len assms tminus_def by auto
+      then show ?case by simp
+    next
+      case 2
+      then have 1: "\<lparr>a\<rparr> - \<lparr>b\<rparr> = - int (2 ^ (Suc k)) + int \<lbrakk> a -\<^sub>A b \<rbrakk>" unfolding seval.simps
+        using DAminus_eq_len assms tminus_def by auto
+
+      show ?case unfolding 1
+        apply simp
+        using assms 2 apply (cases "a -\<^sub>A b") apply simp_all
+        using ueval_upper_bound3
+        by (metis DAminus_eq_len add_diff_cancel_left' length_Cons plus_1_eq_Suc tminus_def)
+         
+    qed
 
 
-lemma length_sminus: 
-  fixes a b :: "bool list"
+lemma thm_3_5_cs2_2_impl_3:
+  fixes k :: nat and a b :: bool and as bs :: "bool list"
+  assumes "length as = k"
+  defines "triple' x y z \<equiv> triple x y z (a#as) (b#bs) ((a#as) -\<^sub>A (b#bs))"
+  shows "length as = length bs \<Longrightarrow> 
+    - (2 ^ (Suc k)) + 1 \<le> \<lparr>a#as\<rparr> - \<lparr>b#bs\<rparr> \<and> \<lparr>a#as\<rparr> - \<lparr>b#bs\<rparr> \<le> - (2 ^ k) - 1 \<Longrightarrow> triple' \<top> \<bottom> \<bottom>"
+proof goal_cases
+  case 1
+   have 2: "- (2 ^ (Suc k)) \<le> \<lparr> (a#as) -\<^sub>S\<^sub>A (b#bs) \<rparr> \<and> \<lparr> (a#as) -\<^sub>S\<^sub>A (b#bs) \<rparr> \<le> - (2 ^ k) - 1"
+     apply rule
+    apply(subst thm_3_1_4[symmetric])
+    using 1 apply (simp,simp)
+    apply(subst thm_3_1_4[symmetric])
+    using 1 by simp_all
+
+  define sig_r ("\<sigma>\<^sub>r") where "\<sigma>\<^sub>r \<equiv> \<lbrakk> (\<lbrakk> a \<rbrakk>\<^sub>N + \<lbrakk> \<not> b \<rbrakk>\<^sub>N + \<lbrakk> snd (DA\<^sup>- as bs) \<rbrakk>\<^sub>N) mod 2 \<rbrakk>\<^sub>B"
+  define r_k_minus_one ("r\<^sup>k\<^sup>-\<^sup>1") where "r\<^sup>k\<^sup>-\<^sup>1 \<equiv> fst (DA\<^sup>- as bs)"
+  define R  where "R \<equiv> \<lbrakk> (\<lbrakk> a \<rbrakk>\<^sub>N + \<lbrakk> \<not> b \<rbrakk>\<^sub>N + \<lbrakk> snd (\<sigma>\<^sub>r # r\<^sup>k\<^sup>-\<^sup>1, \<lbrakk> (\<lbrakk> a \<rbrakk>\<^sub>N + \<lbrakk> \<not> b \<rbrakk>\<^sub>N + \<lbrakk> snd (DA\<^sup>- as bs) \<rbrakk>\<^sub>N) div 2 \<rbrakk>\<^sub>B) \<rbrakk>\<^sub>N) mod 2 \<rbrakk>\<^sub>B"
+
+  from 2 have 3: 
+    "- (2 ^ (Suc k)) \<le> - int (\<lbrakk> R \<rbrakk>\<^sub>N) * (2 ^ (Suc k)) + int ((\<lbrakk>\<sigma>\<^sub>r\<rbrakk>\<^sub>N) * (2 ^ k) + \<lbrakk> r\<^sup>k\<^sup>-\<^sup>1 \<rbrakk>)"
+    "- int (\<lbrakk> R \<rbrakk>\<^sub>N) * (2 ^ (Suc k)) + int ((\<lbrakk>\<sigma>\<^sub>r\<rbrakk>\<^sub>N) * (2 ^ k) + \<lbrakk> r\<^sup>k\<^sup>-\<^sup>1 \<rbrakk>) \<le> - (2 ^ k) - 1"
+    unfolding sminus.simps list.sel(1) DAminus.simps fst_conv sig_r_def 
+        r_k_minus_one_def R_def seval.simps ueval.simps
+    using DAminus_eq_len assms(1) 1(1) by simp_all
+
+  from 3(2) have 4: "\<lbrakk> R \<rbrakk>\<^sub>N = 1"
+    by (smt One_nat_def add_diff_cancel_left' bool2nat.elims le_numeral_extra(4) mult_minus_left of_nat_diff of_nat_less_0_iff plus_1_eq_Suc zero_le_power)
+  then have 5: "R = \<top>" using bool2nat.elims by auto
+
+  from 3(2) 4 have "int ((\<lbrakk>\<sigma>\<^sub>r\<rbrakk>\<^sub>N) * (2 ^ k) + \<lbrakk> r\<^sup>k\<^sup>-\<^sup>1 \<rbrakk>) \<le> (2 ^ k) - 1" by simp
+  with 4 5 have "\<lbrakk>\<sigma>\<^sub>r\<rbrakk>\<^sub>N = 0"
+    by (smt bool2nat.simps(2) int_nat_eq mult.left_neutral nat_2 numeral_2_eq_2 of_nat_add of_nat_power_eq_of_nat_cancel_iff seval.simps(2) seval_lower_bound top_unfold)
+  then have 6: "\<sigma>\<^sub>r = \<bottom>" using bool2nat.elims by auto
+
+  with 5 have "\<top> = a" "\<bottom> = b" "\<bottom> = hd ((a#as) -\<^sub>A (b#bs))"
+    unfolding tminus_def R_def sig_r_def r_k_minus_one_def 
+    apply (smt "1"(1) "1"(2) assms(1) eval_eq_seval of_nat_less_0_iff seval_upper_bound top_unfold)
+    apply (smt "1"(2) One_nat_def add.commute add_0_left assms(1) bool2nat.simps(1) bot_unfold mult_is_0 nat_int_comparison(2) plus_1_eq_Suc semiring_normalization_rules(2) seval.simps(2) seval_lower_bound ueval_upper_bound3)
+    using "6" sig_r_def by auto
+  then show ?case unfolding triple'_def triple_def by auto
+qed
+
+
+lemma thm_3_5_cs2_3_impl_1:
+  fixes k :: nat and a b :: bool and as bs :: "bool list"
+  assumes "length as = k"
+  defines "triple' x y z \<equiv> triple x y z (a#as) (b#bs) ((a#as) -\<^sub>A (b#bs))"
+  shows "length as = length bs \<Longrightarrow> 
+   triple' \<top> \<bottom> \<bottom> \<Longrightarrow> (\<lparr>a#as\<rparr> - \<lparr>b#bs\<rparr> = \<lparr>\<top>#((a#as) -\<^sub>A (b#bs))\<rparr> \<and> hd ((a#as) -\<^sub>A (b#bs)) = \<bottom>)"
+proof goal_cases
+  case 1
+  then show ?case 
+    apply(subst thm_3_1_4)
+    using assms apply simp
+    unfolding sminus.simps tminus_def seval.simps DAminus.simps prod.sel triple'_def triple_def list.sel(1)
+    by (smt One_nat_def add_numeral_left add_self_div_2 bot_unfold mod_add_self1 nat2bool.simps(2) not_mod2_eq_Suc_0_eq_0 numeral_2_eq_2 numeral_One one_mod_two_eq_one plus_1_eq_Suc semiring_norm(2) to_from_mod_id2 top_unfold)
+qed 
+
+
+lemma thm_3_5_cs2_2_impl_1:
+  fixes k :: nat
   assumes "length a = Suc k"
- shows "length a = length b \<Longrightarrow> length (a -\<^sub>S\<^sub>A b) = Suc (length b)"
+  shows "length a = length b \<Longrightarrow> 
+    - (2 ^ (Suc k)) + 1 \<le> \<lparr>a\<rparr> - \<lparr>b\<rparr> \<and> \<lparr>a\<rparr> - \<lparr>b\<rparr> \<le> - (2 ^ k) - 1 \<Longrightarrow> (\<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>\<top>#(a -\<^sub>A b)\<rparr> \<and> hd (a -\<^sub>A b) = \<bottom>)"
+  using assms
   apply (cases a; cases b)
-  using assms apply simp
-    apply (simp add:assms)+
-using DAminus_eq_len by simp
+  apply (simp, simp, simp) 
+proof goal_cases
+  case (1 a list aa lista)
+  show ?case unfolding 1
+    apply(rule thm_3_5_cs2_3_impl_1)
+    using 1 unfolding 1 apply (simp, simp)
+    apply(rule thm_3_5_cs2_2_impl_3)
+    using 1 unfolding 1 by simp+
+qed
 
-lemma one_seval: 
+
+lemma thm_3_5_cs2_2_impl_1':
   fixes k :: nat
-  assumes "length a = Suc (Suc k)"
-  shows "\<lparr> \<zero>\<^sup>\<rightarrow>\<one> a \<rparr> = 1"
-  using assms apply (induct a arbitrary: k) 
-  apply simp
-  apply (case_tac a2)
-   apply simp+
-  apply (case_tac list)
-  by auto
+  assumes "length a = Suc k"
+  shows "length a = length b \<Longrightarrow> 
+    - (2 ^ (Suc k)) + 1 \<le> \<lparr>a\<rparr> - \<lparr>b\<rparr> \<and> \<lparr>a\<rparr> - \<lparr>b\<rparr> \<le> - (2 ^ k) - 1 \<Longrightarrow> \<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>\<top>#(a -\<^sub>A b)\<rparr>"
+  using thm_3_5_cs2_2_impl_1 assms by blast
 
 
 
@@ -1086,38 +1341,38 @@ proof goal_cases
 qed
 
 
-lemma thm_3_6_5_aux1a: "length list = k \<Longrightarrow> snd (DA\<^sup>- list (\<zero>\<^sup>\<rightarrow> k)) = True"
+lemma thm_3_6_6_aux1a: "length list = k \<Longrightarrow> snd (DA\<^sup>- list (\<zero>\<^sup>\<rightarrow> k)) = True"
   apply (induct list arbitrary: k)
    apply simp
   by (case_tac k, simp_all, case_tac a, simp_all)
 
 
-lemma thm_3_6_5_aux1b: "length list = k \<Longrightarrow> snd (DA\<^sup>+ list (\<zero>\<^sup>\<rightarrow> k)) = False"
+lemma thm_3_6_6_aux1b: "length list = k \<Longrightarrow> snd (DA\<^sup>+ list (\<zero>\<^sup>\<rightarrow> k)) = False"
   apply (induct list arbitrary: k)
    apply simp
   by (case_tac k, simp_all, case_tac a, simp_all)
 
 
-lemma thm_3_6_5_aux1c: "length list = k \<Longrightarrow> fst (DA\<^sup>- list (\<zero>\<^sup>\<rightarrow> k)) = list"
+lemma thm_3_6_6_aux1c: "length list = k \<Longrightarrow> fst (DA\<^sup>- list (\<zero>\<^sup>\<rightarrow> k)) = list"
 apply (induct list arbitrary: k)
    apply simp
   apply (case_tac k, simp_all)
   apply (fold zero_def)
-apply (subst thm_3_6_5_aux1a)
+apply (subst thm_3_6_6_aux1a)
    apply simp
   by (case_tac a, simp_all)
 
-lemma thm_3_6_5_aux1d: "length list = k \<Longrightarrow> fst (DA\<^sup>+ list (\<zero>\<^sup>\<rightarrow> k)) = list"
+lemma thm_3_6_6_aux1d: "length list = k \<Longrightarrow> fst (DA\<^sup>+ list (\<zero>\<^sup>\<rightarrow> k)) = list"
 apply (induct list arbitrary: k)
    apply simp
   apply (case_tac k, simp_all)
   apply (fold zero_def)
-apply (subst thm_3_6_5_aux1b)
+apply (subst thm_3_6_6_aux1b)
    apply simp
   by (case_tac a, simp_all)
 
 
-lemma thm_3_6_5_aux1: 
+lemma thm_3_6_6_aux1: 
   fixes k :: nat
   assumes "length a = Suc (Suc k)" and "length a = length b" and "b = True # \<zero>\<^sup>\<rightarrow> (Suc k)"
   shows "a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b"
@@ -1129,18 +1384,18 @@ proof goal_cases
      apply simp_all
     using to_from_mod_id by force
 
-  show ?case 
+  show ?case
     apply (subst 2)
     unfolding 1 tminus_def tplus_def DAminus.simps DAplus.simps fst_conv list.inject
     apply rule
-     apply (subst thm_3_6_5_aux1a)
+     apply (subst thm_3_6_6_aux1a)
     using 1 apply simp
-     apply (subst thm_3_6_5_aux1b)
+     apply (subst thm_3_6_6_aux1b)
     using 1 apply simp
      apply simp
-    apply (subst thm_3_6_5_aux1c)
+    apply (subst thm_3_6_6_aux1c)
     using 1 apply simp
-    apply (subst thm_3_6_5_aux1d)
+    apply (subst thm_3_6_6_aux1d)
     using 1 by simp_all
 qed
 
@@ -1149,12 +1404,43 @@ fun sx :: "'a list \<Rightarrow> 'a list" where
 "sx [] = undefined" |
 "sx (a#as) = (a#a#as)"
 
-lemma need0: "length (a -\<^sub>A b) = Suc k \<Longrightarrow> \<lparr> a -\<^sub>A b \<rparr> = \<lparr>sx (a -\<^sub>A b)\<rparr>"
+
+lemma thm_3_6_6_aux2a: "length (a -\<^sub>A b) = Suc k \<Longrightarrow> \<lparr> a -\<^sub>A b \<rparr> = \<lparr>sx (a -\<^sub>A b)\<rparr>"
   by(cases "a -\<^sub>A b", simp_all)
 
 
+lemma thm_3_6_6_aux2b: "length a = Suc k \<Longrightarrow> length a = length b \<Longrightarrow> \<lparr>a\<rparr> + \<lparr>b\<rparr> = \<lparr>\<top>#(a +\<^sub>A b)\<rparr> \<or> \<lparr>a\<rparr> + \<lparr>b\<rparr> = \<lparr>\<bottom>#(a +\<^sub>A b)\<rparr>" 
+  apply (cases "- (2 ^ k) \<le> \<lparr>a\<rparr> + \<lparr>b\<rparr>" ; cases "\<lparr>a\<rparr> + \<lparr>b\<rparr> \<le> 2 ^ k - 1")
+proof goal_cases
+  case 1
+  have "\<lparr>a\<rparr> + \<lparr>b\<rparr> = \<lparr>a +\<^sub>A b\<rparr>"
+    apply (rule thm_3_4_2_impl_1)
+    using 1 by simp+
+  with 1 show ?case 
+    apply (cases "a +\<^sub>A b", simp)
+    apply (case_tac aa)
+    using thm_3_6_6_aux2a by simp+
+next
+  case 2
+  then have "2 ^ k \<le> \<lparr> a \<rparr> + \<lparr> b \<rparr>" by simp
+  then show ?case sorry
+next
+  case 3
+   then have 1: "\<lparr> a \<rparr> + \<lparr> b \<rparr> \<le> - (2 ^ k) - 1" by simp
+   show ?case 
+     apply rule
+     apply (rule thm_3_4_cs2_2_impl_1')
+     using 3 apply (simp, simp)
+     apply rule
+     apply (smt "3"(1) "3"(2) Suc_length_conv comm_semiring_class.distrib power_Suc semiring_normalization_rules(2) seval_lower_bound)
+     using 1 by simp
+next
+  case 4
+  then have \<bottom> by (smt one_le_power)
+  then show ?case by simp
+qed
 
-lemma need1: "length a = Suc k \<Longrightarrow> length a = length b \<Longrightarrow> \<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>\<top>#(a -\<^sub>A b)\<rparr> \<or> \<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>\<bottom>#(a -\<^sub>A b)\<rparr>"
+lemma thm_3_6_6_aux2c: "length a = Suc k \<Longrightarrow> length a = length b \<Longrightarrow> \<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>\<top>#(a -\<^sub>A b)\<rparr> \<or> \<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>\<bottom>#(a -\<^sub>A b)\<rparr>"
   apply (cases "- (2 ^ k) \<le> \<lparr>a\<rparr> - \<lparr>b\<rparr>" ; cases "\<lparr>a\<rparr> - \<lparr>b\<rparr> \<le> 2 ^ k - 1")
 proof goal_cases
   case 1
@@ -1164,15 +1450,21 @@ proof goal_cases
   with 1 show ?case 
     apply (cases "a -\<^sub>A b", simp)
     apply (case_tac aa)
-    using need0 by simp+
+    using thm_3_6_6_aux2a by simp+
 next
   case 2
   then have "2 ^ k \<le> \<lparr> a \<rparr> - \<lparr> b \<rparr>" by simp
   then show ?case sorry
 next
   case 3
-   then have "\<lparr> a \<rparr> - \<lparr> b \<rparr> \<le> - (2 ^ k) - 1" by simp
- then show ?case sorry
+   then have 1: "\<lparr> a \<rparr> - \<lparr> b \<rparr> \<le> - (2 ^ k) - 1" by simp
+   show ?case 
+     apply rule
+     apply (rule thm_3_5_cs2_2_impl_1')
+     using 3 apply (simp, simp)
+     apply rule
+     using 1 apply simp_all
+     by (smt "3"(1) "3"(2) Suc_length_conv seval_lower_bound seval_upper_bound)
 next
   case 4
   then have \<bottom> by (smt one_le_power)
@@ -1180,33 +1472,15 @@ next
 qed
 
 
-lemma need2: "\<lparr>a\<rparr> + \<lparr>b\<rparr> = \<lparr>\<top>#(a +\<^sub>A b)\<rparr> \<or> \<lparr>a\<rparr> + \<lparr>b\<rparr> = \<lparr>\<bottom>#(a +\<^sub>A b)\<rparr>" sorry
-
-
-
-lemma thm_3_6_5_aux2: 
+lemma thm_3_6_6_aux2: 
   fixes k :: nat
   assumes "length a = Suc (Suc k)" and "length a = length b" and "b \<noteq> True # \<zero>\<^sup>\<rightarrow> (Suc k)"
   shows "a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b"
 
 proof -
   have 1: "\<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>a\<rparr> + \<lparr>\<not>\<^sub>A b\<rparr>" using assms thm_3_6_4 by simp
-  have 2: "length (a -\<^sub>A b) = length (a +\<^sub>A \<not>\<^sub>A b)" 
-    unfolding tplus_def neg_def
-    apply (subst DAplus_eq_len)
-    apply simp
-  apply (subst DAplus_eq_len)
-  using length_comp_one apply simp
-   apply (subst length_comp_one[symmetric])
-  apply (simp add: assms(2))
-  apply (subst DAplus_eq_len)
-   apply (subst length_comp_one[symmetric])
-  apply simp
-  unfolding tminus_def
-   apply (subst DAminus_eq_len)
-  using assms apply simp
-   apply (subst length_comp_one[symmetric])
-  using assms by simp
+  have 2: "length (a -\<^sub>A b) = length (a +\<^sub>A \<not>\<^sub>A b)"
+    using DAminus_eq_len DAplus_eq_len assms(2) length_comp_one neg_def tminus_def tplus_def by auto
 
   { assume 3: "\<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>\<top>#(a -\<^sub>A b)\<rparr>"
     { assume 4: "\<lparr>a\<rparr> + \<lparr>\<not>\<^sub>A b\<rparr> = \<lparr>\<top>#(a +\<^sub>A \<not>\<^sub>A b)\<rparr>"
@@ -1222,7 +1496,8 @@ proof -
       then have "a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b" by simp
     }
     then have "a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b"
-      using need2 \<open>\<lparr> a \<rparr> + \<lparr> \<not>\<^sub>A b \<rparr> = \<lparr> \<top> # a +\<^sub>A \<not>\<^sub>A b \<rparr> \<Longrightarrow> a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b\<close> by blast
+      using 1 assms thm_3_6_6_aux2b \<open>\<lparr> a \<rparr> + \<lparr> \<not>\<^sub>A b \<rparr> = \<lparr> \<top> # a +\<^sub>A \<not>\<^sub>A b \<rparr> \<Longrightarrow> a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b\<close>
+      by (metis DAplus_eq_len compl_def length_comp_one length_map neg_def tplus_def)
   }
   { assume 3: "\<lparr>a\<rparr> - \<lparr>b\<rparr> = \<lparr>\<bottom>#(a -\<^sub>A b)\<rparr>"
     { assume 4: "\<lparr>a\<rparr> + \<lparr>\<not>\<^sub>A b\<rparr> = \<lparr>\<top>#(a +\<^sub>A \<not>\<^sub>A b)\<rparr>"
@@ -1238,10 +1513,11 @@ proof -
       then have "a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b" by simp
     }
     then have "a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b"
-      using need2 \<open>\<lparr> a \<rparr> + \<lparr> \<not>\<^sub>A b \<rparr> = \<lparr> \<top> # a +\<^sub>A \<not>\<^sub>A b \<rparr> \<Longrightarrow> a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b\<close> by blast
+      using 1 assms thm_3_6_6_aux2b \<open>\<lparr> a \<rparr> + \<lparr> \<not>\<^sub>A b \<rparr> = \<lparr> \<top> # a +\<^sub>A \<not>\<^sub>A b \<rparr> \<Longrightarrow> a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b\<close> 
+      by (metis DAplus_eq_len compl_def length_comp_one length_map neg_def tplus_def)
   }
   then show "a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b"  
-    using need1 assms \<open>\<lparr> a \<rparr> - \<lparr> b \<rparr> = \<lparr> \<top> # a -\<^sub>A b \<rparr> \<Longrightarrow> a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b\<close> by blast
+    using thm_3_6_6_aux2c assms \<open>\<lparr> a \<rparr> - \<lparr> b \<rparr> = \<lparr> \<top> # a -\<^sub>A b \<rparr> \<Longrightarrow> a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b\<close> by blast
 qed
 
 
@@ -1250,7 +1526,7 @@ lemma thm_3_6_5:
   assumes "length a = Suc (Suc k)" and "length a = length b"
   shows "\<lparr>a -\<^sub>A b\<rparr> = \<lparr>a +\<^sub>A \<not>\<^sub>A b\<rparr>"
   apply (cases "b = True # \<zero>\<^sup>\<rightarrow> (Suc k)")
-  using assms thm_3_6_5_aux1 thm_3_6_5_aux2 by simp_all
+  using assms thm_3_6_6_aux1 thm_3_6_6_aux2 by simp_all
 
 
 
@@ -1258,26 +1534,6 @@ lemma thm_3_6_6:
   fixes k :: nat
   assumes "length a = Suc (Suc k)"
   shows "length a = length b \<Longrightarrow> a -\<^sub>A b = a +\<^sub>A \<not>\<^sub>A b"
-  apply(rule lemma_1_4_2[where k = "Suc k"])
-  unfolding tminus_def 
-    apply (subst DAminus_eq_len)
-     apply simp
-  using assms apply simp
-  unfolding tplus_def 
-    apply (subst DAminus_eq_len)
-    apply simp
-    apply (subst DAplus_eq_len)
-  unfolding neg_def tplus_def
-    apply (subst DAplus_eq_len)
-  using length_comp_one apply simp
-    apply (subst length_comp_one[symmetric])
-    apply simp
-    apply (subst DAplus_eq_len)
-  using length_comp_one apply simp
-    apply (subst length_comp_one[symmetric])
-    apply simp
-  apply (fold tminus_def, fold tplus_def, fold neg_def)
-  apply (rule thm_3_6_5[where k = k])
-  using assms by simp_all
+  using assms thm_3_6_6_aux1 thm_3_6_6_aux2 by blast
 
 end
