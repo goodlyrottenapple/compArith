@@ -38,7 +38,6 @@ fun DAminus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list \<time
     \<lbrakk>(\<lbrakk>a\<rbrakk>\<^sub>N + \<lbrakk>\<not>b\<rbrakk>\<^sub>N + \<lbrakk>snd (DA\<^sup>- as bs)\<rbrakk>\<^sub>N) div 2\<rbrakk>\<^sub>B )"
 
 
-
 definition uplus :: "bool list \<Rightarrow> bool list \<Rightarrow> bool list" (infixl "+\<^sub>Z\<^sub>A" 90) where
 "as +\<^sub>Z\<^sub>A bs = fst (DA\<^sup>+ (False # as) (False # bs))"
 
@@ -184,25 +183,76 @@ lemma nat_transfer: "\<And>x y. (int x) + (int y) = int (x + y)" by simp
 lemma nat_transfer2: "(int x) * (int y) = int (x * y)" by simp
 
 
-fun compl :: "bool list \<Rightarrow> bool list" where
+(*fun compl :: "bool list \<Rightarrow> bool list" where
 "compl [] = []" |
 "compl (True#xs) = False # compl xs" |
-"compl (False#xs) = True # compl xs"
+"compl (False#xs) = True # compl xs"*)
+
+definition compl where "compl xs = map (\<lambda>x. \<not> x) xs"
+lemma compl_unfold[simp]: "compl xs = map (\<lambda>x. \<not> x) xs" unfolding compl_def by rule
 
 fun one_list :: "bool list \<Rightarrow> bool list" ("\<zero>\<^sup>\<rightarrow>\<one>") where
 "\<zero>\<^sup>\<rightarrow>\<one> [] = []" |
 "\<zero>\<^sup>\<rightarrow>\<one> [_] = [True]" |
 "\<zero>\<^sup>\<rightarrow>\<one> (_#xs) = False # \<zero>\<^sup>\<rightarrow>\<one> xs"
 
-fun zero :: "nat \<Rightarrow> bool list" ("\<zero>") where
-"\<zero> 0 = []" |
-"\<zero> (Suc n) = False # \<zero> n"
+definition zero ("\<zero>\<^sup>\<rightarrow>") where "\<zero>\<^sup>\<rightarrow> n = replicate n False"
+lemma zero_unfold[simp]: "\<zero>\<^sup>\<rightarrow> n = replicate n False" unfolding zero_def by rule
 
-fun one :: "nat \<Rightarrow> bool list" ("\<one>") where
-"\<one> 0 = []" |
-"\<one> (Suc n) = True # \<one> n"
+definition one ("\<one>\<^sup>\<rightarrow>") where "\<one>\<^sup>\<rightarrow> n = replicate n True"
+lemma one_unfold[simp]: "\<one>\<^sup>\<rightarrow> n = replicate n True" unfolding one_def by rule
 
 definition neg ("\<not>\<^sub>A") where "\<not>\<^sub>A x = (compl x) +\<^sub>A (\<zero>\<^sup>\<rightarrow>\<one> x)" 
 definition sneg ("\<not>\<^sub>S\<^sub>A") where "\<not>\<^sub>S\<^sub>A x = (compl x) +\<^sub>S\<^sub>A (\<zero>\<^sup>\<rightarrow>\<one> x)"
 
+
+(*
+fun DA :: "bool \<Rightarrow> bool list \<Rightarrow> bool list \<Rightarrow> bool list \<times> bool" where
+"DA c [] [] = ([] , c)" |
+"DA _ (_ # _) [] = undefined" |
+"DA _ [] (_ # _) = undefined" |
+"DA c (a # as) (b # bs) = 
+  ( \<lbrakk>(\<lbrakk>a\<rbrakk>\<^sub>N + \<lbrakk>b\<rbrakk>\<^sub>N + \<lbrakk>snd (DA c as bs)\<rbrakk>\<^sub>N) mod 2\<rbrakk>\<^sub>B # fst (DA c as bs) , 
+    \<lbrakk>(\<lbrakk>a\<rbrakk>\<^sub>N + \<lbrakk>b\<rbrakk>\<^sub>N + \<lbrakk>snd (DA c as bs)\<rbrakk>\<^sub>N) div 2\<rbrakk>\<^sub>B )"
+
+lemma DA_plus_DA_def:
+  "length as = length bs \<Longrightarrow> DA\<^sup>+ as bs = DA \<bottom> as bs"
+apply (induct as bs rule: List.list_induct2)
+  unfolding DAplus.simps DA.simps
+  by simp_all
+
+
+lemma DA_minus_DA_def: 
+  "length as = length bs \<Longrightarrow> DA\<^sup>- as bs = DA \<top> as (compl bs)"
+apply (induct as bs rule: List.list_induct2)
+  unfolding DAminus.simps DA.simps
+  by simp_all
+
+
+
+
+lemma DA_minus_DA_def_aux: 
+  "length as = Suc (Suc k) \<Longrightarrow> DA \<bottom> as (\<zero>\<^sup>\<rightarrow>\<one> as) = DA \<top> as (\<zero>\<^sup>\<rightarrow> (Suc (Suc k)))"
+  apply (induct as arbitrary: k)
+   apply simp
+  apply (case_tac as)
+  apply simp
+  apply simp
+  sorry
+
+
+lemma DA_minus_DA_def: 
+  "length as = length bs \<Longrightarrow> length as = Suc (Suc k) \<Longrightarrow> fst (DA \<bottom> as (fst (DA \<bottom> bs (\<zero>\<^sup>\<rightarrow>\<one> as)))) = fst (DA \<top> as bs)"
+  apply (induct as bs arbitrary: k rule: List.list_induct2 )
+   apply simp
+  unfolding one_list.simps DA.simps fst_conv
+  find_theorems "fst (?a,?b) = ?a"
+  apply (case_tac xs; case_tac ys, simp_all)
+  apply rule
+   defer
+   apply (case_tac list; case_tac lista, simp_all)
+  apply (case_tac a; case_tac aa, simp_all)
+  apply auto[1]
+   defer
+*)
 end
