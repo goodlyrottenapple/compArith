@@ -244,4 +244,16 @@ lemma one_seval:
   by auto
 
 
+(*sign extend*)
+
+fun sx :: "'a list \<Rightarrow> 'a list" where
+"sx [] = undefined" |
+"sx (a#as) = (a#a#as)"
+
+
+lemma sx_seval: "length (a -\<^sub>A b) = Suc k \<Longrightarrow> \<lparr> a -\<^sub>A b \<rparr> = \<lparr>sx (a -\<^sub>A b)\<rparr>"
+  by(cases "a -\<^sub>A b", simp_all)
+
+
+
 end
