@@ -803,7 +803,9 @@ case 2
       apply (subst diff_le_eq)
       apply (rule order_class.order.trans)
        apply (rule 3[where k = k])
-      using ueval_upper_bound2 1 by (simp_all add: 1)
+      using ueval_upper_bound2 1
+       apply auto[1]
+      by (simp add: "1"(1))
   qed
 
   show ?case unfolding 2 using assms
